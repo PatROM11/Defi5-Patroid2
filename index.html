@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Defi4-Patroid</title>
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #111; color: #fff;
+            font-family: sans-serif; display: flex; flex-direction: column;
+            align-items: center; justify-content: space-between; height: 100vh;
+            overflow: hidden; user-select: none; -webkit-user-select: none;
+        }
+
+        .hud-top {
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+            padding: 5px 20px; box-sizing: border-box; background-color: #1a1a1a; border-bottom: 2px solid #333;
+        }
+
+        .hud-text { display: flex; flex-direction: column; gap: 4px; }
+        #room-coords { font-size: 11px; color: #00ffcc; font-family: monospace; }
+        #room-title { font-size: 16px; font-weight: bold; color: #ff3333; letter-spacing: 1px; }
+
+        .minimap-container {
+            display: grid; gap: 2px; background: #000; padding: 4px; border: 2px solid #555; border-radius: 4px;
+        }
+        .map-pixel { background-color: #333; border-radius: 1px; width: 10px; height: 10px; }
+        .map-pixel.active { background-color: #ff3333; animation: clignote 0.6s infinite alternate; }
+
+        @keyframes clignote { from { opacity: 0.3; } to { opacity: 1; } }
+
+        canvas { background-color: #050505; border: 4px solid #333; max-width: 100%; max-height: 45vh; touch-action: none; }
+
+        .system-controls {
+            display: flex; gap: 20px; margin: 8px 0; width: 100%; justify-content: center;
+        }
+        .btn-system {
+            background-color: #333; border: 2px solid #555; color: #fff; padding: 12px 28px;
+            font-size: 15px; font-weight: bold; border-radius: 5px; cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 3px #111; -webkit-appearance: none; min-width: 110px; text-align: center;
+        }
+        .btn-system:active { background-color: #555; transform: translateY(2px); box-shadow: 0 1px #111; }
+        #btn-start { background-color: #224422; border-color: #44aa44; }
+        #btn-pause { background-color: #444422; border-color: #aaaa44; }
+
+        .controls {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; padding: 10px 15px; box-sizing: border-box; background-color: #222; margin-bottom: 5px;
+        }
+
+        .d-pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 5px; }
+        .action-btns { display: flex; gap: 15px; }
+
+        .btn {
+            background-color: #444; border: 3px solid #666; border-radius: 10px;
+            color: white; font-weight: bold; font-size: 22px; display: flex;
+            justify-content: center; align-items: center; box-shadow: 0 4px #111;
+            box-sizing: border-box; width: 52px; height: 52px;
+            font-family: monospace, sans-serif;
+        }
+
+        .btn:active { background-color: #666; box-shadow: 0 1px #111; transform: translateY(3px); }
+
+        #btn-haut { grid-column: 2; grid-row: 1; }
+        #btn-gauche { grid-column: 1; grid-row: 2; }
+        #btn-droite { grid-column: 3; grid-row: 2; }
+        #btn-bas { grid-column: 2; grid-row: 3; }
+        .btn-action { width: 55px; height: 55px; border-radius: 50%; font-size: 20px; font-family: sans-serif; }
+    </style>
+</head>
+<body>
+
+    <div class="hud-top">
+        <div class="hud-text">
+            <div id="room-title">Defi4-Patroid</div>
+            <div id="room-coords">ZONE: [X: 0, Y: 0]</div>
+        </div>
+        <div class="minimap-container" id="minimap"></div>
+    </div>
+
+    <canvas id="gameCanvas" width="400" height="300"></canvas>
+
+    <div class="system-controls">
+        <button class="btn-system" id="btn-start">START</button>
+        <button class="btn-system" id="btn-pause">PAUSE</button>
+    </div>
+
+    <div class="controls">
+        <div class="d-pad">
+            <div class="btn" id="btn-haut">&#9650;</div>
+            <div class="btn" id="btn-gauche">&#9664;</div>
+            <div class="btn" id="btn-droite">&#9654;</div>
+            <div class="btn" id="btn-bas">&#9660;</div>
+        </div>
+        
+        <div class="action-btns">
+            <div class="btn btn-action" id="btn-saut" style="background-color: #a00; border-color: #d00;">A</div>
+            <div class="btn btn-action" id="btn-tir" style="background-color: #0a0; border-color: #0d0;">B</div>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const roomCoords = document.getElementById('room-coords');
+    const minimap = document.getElementById('minimap');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+
+    let gameState = 'TITLE'; 
+    let niveauChoisi = 1; 
+    let tailleMonde = 2;
+
+    let score = 0;
+    let chiffresTrouves = 0;
+    let totalChiffres = 5; 
+
+    let player = {
+        x: 190, y: 240, width: 20, height: 32,
+        vitesseX: 0, vitesseY: 0, compteurSauts: 0,
+        regardX: 1, auSol: true, energie: 99, maxEnergie: 99, clignotementInvuln: 0,
+        timerFlashTir: 0 
+    };
+
+    let bullets = [];
+    let enemies = [];
+    let roomItems = []; 
+
+    const gravite = 0.5;
+    const vitesseCourse = 4;
+    const puissanceSaut = -8.5;
+
+    let carteX = 0;
+    let carteY = 0;
+    let monde = [];
+
+    let enTransition = false;
+    let transitionType = ""; 
+    let transitionTimer = 0;
+    const dureeTransition = 30; 
+    let ancX = 0, ancY = 0;     
+    let nouvX = 0, nouvY = 0;    
+    let offsetCamY = 0;          
+    let offsetCamX = 0;          
+
+    let tickAnimation = 0;
+
+    // --- SYSTÈME AUDIO EMBARQUÉ + GÉNÉRATEUR DE MUSIQUE RÉTRO ---
+    let audioCtx = null;
+    let introInterval = null; // Gère la boucle de la musique d'intro
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    // Joue une note unique synthétisée à un moment précis
+    function jouerNote(frequence, typeOnde, volume, depart, duree) {
+        if (!audioCtx) return;
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        
+        osc.type = typeOnde;
+        osc.frequency.setValueAtTime(frequence, audioCtx.currentTime + depart);
+        
+        gain.gain.setValueAtTime(volume, audioCtx.currentTime + depart);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + depart + duree);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start(audioCtx.currentTime + depart);
+        osc.stop(audioCtx.currentTime + depart + duree);
+    }
+
+    function gererMusiqueIntro(activer) {
+        initAudio();
+        if (!activer) {
+            if (introInterval) { clearInterval(introInterval); introInterval = null; }
+            return;
+        }
+        if (introInterval) return; // Déjà en cours de lecture
+
+        // Petite boucle mélodique rétro d'ambiance mystérieuse/exploration (style Metroid)
+        const notesIntro = [130.81, 146.83, 155.56, 196.00, 155.56, 196.00, 220.00, 196.00]; // Do, Ré, Mib, Sol...
+        let indexNote = 0;
+
+        introInterval = setInterval(() => {
+            if (gameState === 'TITLE') {
+                jouerNote(notesIntro[indexNote], 'triangle', 0.08, 0, 0.25);
+                indexNote = (indexNote + 1) % notesIntro.length;
+            } else {
+                gererMusiqueIntro(false);
+            }
+        }, 250);
+    }
+
+    function jouerFanfareVictoire() {
+        gererMusiqueIntro(false);
+        // Mélodie héroïque montante et joyeuse
+        let rythme = 0.12;
+        jouerNote(261.63, 'square', 0.1, 0 * rythme, 0.1); // Do
+        jouerNote(329.63, 'square', 0.1, 1 * rythme, 0.1); // Mi
+        jouerNote(392.00, 'square', 0.1, 2 * rythme, 0.1); // Sol
+        jouerNote(523.25, 'square', 0.1, 3 * rythme, 0.15); // Do Octave
+        jouerNote(392.00, 'square', 0.1, 4.5 * rythme, 0.1); // Sol
+        jouerNote(523.25, 'square', 0.12, 5.5 * rythme, 0.4); // Do Octave soutenu !
+    }
+
+    function jouerFanfareDefaite() {
+        gererMusiqueIntro(false);
+        // Notes lourdes, dramatiques et descendantes
+        let rythme = 0.16;
+        jouerNote(220.00, 'sawtooth', 0.12, 0 * rythme, 0.15); // La
+        jouerNote(207.65, 'sawtooth', 0.12, 1 * rythme, 0.15); // Lab
+        jouerNote(196.00, 'sawtooth', 0.12, 2 * rythme, 0.15); // Sol
+        jouerNote(174.61, 'sawtooth', 0.15, 3 * rythme, 0.5);  // Fa bas et dramatique
+    }
+
+    function jouerSon(type) {
+        initAudio();
+        if (!audioCtx) return;
+
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        let tempsActuel = audioCtx.currentTime;
+
+        if (type === 'tir') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, tempsActuel);
+            osc.frequency.exponentialRampToValueAtTime(150, tempsActuel + 0.12);
+            gain.gain.setValueAtTime(0.15, tempsActuel);
+            gain.gain.exponentialRampToValueAtTime(0.01, tempsActuel + 0.12);
+            osc.start(tempsActuel);
+            osc.stop(tempsActuel + 0.12);
+        } 
+        else if (type === 'saut') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, tempsActuel);
+            osc.frequency.exponentialRampToValueAtTime(500, tempsActuel + 0.1);
+            gain.gain.setValueAtTime(0.15, tempsActuel);
+            gain.gain.exponentialRampToValueAtTime(0.01, tempsActuel + 0.1);
+            osc.start(tempsActuel);
+            osc.stop(tempsActuel + 0.1);
+        } 
+        else if (type === 'degat') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(180, tempsActuel);
+            osc.frequency.linearRampToValueAtTime(60, tempsActuel + 0.2);
+            gain.gain.setValueAtTime(0.2, tempsActuel);
+            gain.gain.exponentialRampToValueAtTime(0.01, tempsActuel + 0.2);
+            osc.start(tempsActuel);
+            osc.stop(tempsActuel + 0.2);
+        } 
+        else if (type === 'item') {
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(523.25, tempsActuel); 
+            osc.frequency.setValueAtTime(659.25, tempsActuel + 0.08); 
+            gain.gain.setValueAtTime(0.1, tempsActuel);
+            gain.gain.exponentialRampToValueAtTime(0.01, tempsActuel + 0.2);
+            osc.start(tempsActuel);
+            osc.stop(tempsActuel + 0.2);
+        }
+        else if (type === 'explosion') {
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, tempsActuel);
+            osc.frequency.linearRampToValueAtTime(30, tempsActuel + 0.15);
+            gain.gain.setValueAtTime(0.25, tempsActuel);
+            gain.gain.exponentialRampToValueAtTime(0.01, tempsActuel + 0.15);
+            osc.start(tempsActuel);
+            osc.stop(tempsActuel + 0.15);
+        }
+    }
+
+    const boutonsMenu = [
+        { id: 1, x: 40, y: 90, w: 90, h: 25 },
+        { id: 2, x: 155, y: 90, w: 90, h: 25 },
+        { id: 3, x: 270, y: 90, w: 90, h: 25 }
+    ];
+
+    function genererMonde(taille) {
+        tailleMonde = taille;
+        monde = Array(tailleMonde).fill(null).map(() => Array(tailleMonde).fill(null));
+        
+        if (niveauChoisi === 1) totalChiffres = 5;
+        else if (niveauChoisi === 2) totalChiffres = 10;
+        else if (niveauChoisi === 3) totalChiffres = 15;
+
+        carteX = Math.floor(tailleMonde / 2);
+        carteY = tailleMonde - 1;
+
+        for (let x = 0; x < tailleMonde; x++) {
+            for (let y = 0; y < tailleMonde; y++) {
+                let platesformes = [];
+                let ennemis = [];
+
+                if (x % 2 === 0) {
+                    platesformes.push({ x: 40, y: 180, w: 100, h: 15 });
+                    platesformes.push({ x: 260, y: 100, w: 100, h: 15 });
+                    
+                    if (y === tailleMonde - 1) {
+                        platesformes.push({ x: 0, y: 285, w: 400, h: 15 }); 
+                    } else {
+                        platesformes.push({ x: 0, y: 285, w: 130, h: 15 });
+                        platesformes.push({ x: 270, y: 285, w: 130, h: 15 });
+                    }
+
+                    if (y === 0) {
+                        platesformes.push({ x: 0, y: 0, w: 400, h: 15 }); 
+                    } else {
+                        platesformes.push({ x: 0, y: 0, w: 130, h: 15 });
+                        platesformes.push({ x: 270, y: 0, w: 130, h: 15 });
+                    }
+
+                    if (!(x === carteX && y === carteY)) {
+                        ennemis.push({ type: 'volant', x: 200, y: 140, w: 24, h: 16, angle: 0, xOrigine: 200, yOrigine: 140 });
+                        ennemis.push({ type: 'volant', x: 200, y: 80, w: 24, h: 16, angle: Math.PI, xOrigine: 200, yOrigine: 80 });
+                        ennemis.push({ type: 'rampant', x: 50, y: 170, w: 24, h: 10, vX: 1.0, limiteG: 45, limiteD: 115 });
+                    }
+                } 
+                else {
+                    platesformes.push({ x: 120, y: 160, w: 160, h: 15 });
+                    platesformes.push({ x: 0, y: 245, w: 100, h: 15 });
+                    platesformes.push({ x: 300, y: 245, w: 100, h: 15 });
+                    
+                    platesformes.push({ x: 0, y: 0, w: 400, h: 15 });
+                    platesformes.push({ x: 0, y: 285, w: 400, h: 15 });
+
+                    ennemis.push({ type: 'rampant', x: 140, y: 150, w: 24, h: 10, vX: 1.2, limiteG: 125, limiteD: 250 });
+                    ennemis.push({ type: 'rampant', x: 20, y: 235, w: 24, h: 10, vX: -1.0, limiteG: 5, limiteD: 75 });
+                    ennemis.push({ type: 'volant', x: 200, y: 70, w: 24, h: 16, angle: x * 1.5, xOrigine: 200, yOrigine: 70 });
+                }
+                monde[x][y] = { plateformes: platesformes, ennemis: ennemis, objets: [] };
+            }
+        }
+
+        let chiffresAPlacer = [];
+        for (let i = 1; i <= totalChiffres; i++) chiffresAPlacer.push(i);
+        
+        let protectionBoucle = 0;
+        while (chiffresAPlacer.length > 0 && protectionBoucle < 2000) {
+            protectionBoucle++;
+            
+            let rx = Math.floor(Math.random() * tailleMonde);
+            let ry = Math.floor(Math.random() * tailleMonde);
+            
+            if (!monde[rx] || !monde[rx][ry]) continue;
+
+            let salle = monde[rx][ry];
+            if (salle.plateformes && salle.plateformes.length > 0) {
+                let platIdx = Math.floor(Math.random() * salle.plateformes.length);
+                let plat = salle.plateformes[platIdx];
+
+                if (plat.y <= 0 || plat.y >= 285) continue;
+
+                let objetsSurCettePlat = salle.objets.filter(o => o.yPlat === plat.y);
+                let decalage = (objetsSurCettePlat.length * 40) + 20;
+                let cibleX = plat.x + decalage;
+                
+                if (cibleX > (plat.x + plat.w - 20)) continue;
+                
+                let cibleY = plat.y - 25;
+                let valeurChiffre = chiffresAPlacer.shift();
+
+                salle.objets.push({
+                    valeur: valeurChiffre, 
+                    x: cibleX, y: cibleY, w: 16, h: 20,
+                    yPlat: plat.y
+                });
+            }
+        }
+    }
+
+    function dessinerMinimap() {
+        minimap.innerHTML = "";
+        let t = tailleMonde || 2;
+        if (gameState === 'TITLE') {
+            t = niveauChoisi === 1 ? 2 : niveauChoisi === 2 ? 3 : 5;
+        }
+        minimap.style.gridTemplateColumns = `repeat(${t}, 10px)`;
+        minimap.style.gridTemplateRows = `repeat(${t}, 10px)`;
+
+        let activeX = Math.floor(t / 2);
+        let activeY = t - 1;
+
+        for (let y = 0; y < t; y++) {
+            for (let x = 0; x < t; x++) {
+                const pixel = document.createElement('div');
+                pixel.classList.add('map-pixel');
+                if (gameState === 'TITLE') {
+                    if (x === activeX && y === activeY) pixel.classList.add('active');
+                } else {
+                    if (x === carteX && y === carteY) pixel.classList.add('active');
+                }
+                minimap.appendChild(pixel);
+            }
+        }
+    }
+
+    function chargerSalle(cx, cy) {
+        if (!monde || !monde[cx] || !monde[cx][cy]) return;
+        carteX = cx;
+        carteY = cy;
+        roomCoords.textContent = `ZONE: [X: ${carteX}, Y: ${carteY}]`;
+        enemies = JSON.parse(JSON.stringify(monde[carteX][carteY].ennemis || []));
+        roomItems = monde[carteX][carteY].objets || [];
+        dessinerMinimap();
+    }
+
+    function initierTransition(prochainX, prochainY, direction) {
+        if (!monde || !monde[prochainX] || !monde[prochainX][prochainY]) return;
+        
+        if (monde[carteX] && monde[carteX][carteY]) {
+            monde[carteX][carteY].objets = [...roomItems];
+        }
+
+        enTransition = true;
+        transitionType = direction;
+        transitionTimer = 0;
+        ancX = carteX;
+        ancY = carteY;
+        nouvX = prochainX;
+        nouvY = prochainY;
+        bullets = [];
+    }
+
+    function finaliserTransition() {
+        enTransition = false;
+        carteX = nouvX;
+        carteY = nouvY;
+        offsetCamX = 0;
+        offsetCamY = 0;
+        roomCoords.textContent = `ZONE: [X: ${carteX}, Y: ${carteY}]`;
+        
+        if (transitionType === "droite") player.x = 10;
+        if (transitionType === "gauche") player.x = canvas.width - player.width - 10;
+        if (transitionType === "haut") player.y = canvas.height - player.height - 20;
+        if (transitionType === "bas") player.y = 20;
+
+        if (monde && monde[carteX] && monde[carteX][carteY]) {
+            enemies = JSON.parse(JSON.stringify(monde[carteX][carteY].ennemis || []));
+            roomItems = monde[carteX][carteY].objets || [];
+        }
+        dessinerMinimap();
+    }
+
+    function declencherStart(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        if (gameState === 'TITLE') {
+            lancerLeJeu();
+        } else if (gameState === 'PAUSE') {
+            gameState = 'PLAYING';
+        } else if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
+            recommencerJeu();
+        }
+    }
+    btnStart.addEventListener('touchstart', declencherStart, { passive: false });
+    btnStart.addEventListener('click', declencherStart);
+
+    function declencherPause(e) {
+        if(e) { e.preventDefault(); e.stopPropagation(); }
+        if (gameState === 'PLAYING') {
+            gameState = 'PAUSE';
+        }
+    }
+    btnPause.addEventListener('touchstart', declencherPause, { passive: false });
+    btnPause.addEventListener('click', declencherPause);
+
+    function detecterSelectionMenu(e) {
+        // Active et démarre la musique d'intro dès le premier clic de l'utilisateur sur le menu !
+        gererMusiqueIntro(true);
+
+        if (gameState !== 'TITLE') return;
+        e.preventDefault();
+
+        const rect = canvas.getBoundingClientRect();
+        const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+        const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
+
+        const xCanvas = ((clientX - rect.left) / rect.width) * canvas.width;
+        const yCanvas = ((clientY - rect.top) / rect.height) * canvas.height;
+
+        for (let btn of boutonsMenu) {
+            if (xCanvas >= btn.x && xCanvas <= (btn.x + btn.w) &&
+                yCanvas >= btn.y && yCanvas <= (btn.y + btn.h)) {
+                niveauChoisi = btn.id;
+                
+                let t = 2;
+                if (niveauChoisi === 2) t = 3;
+                if (niveauChoisi === 3) t = 5;
+                genererMonde(t);
+                dessinerMinimap(); 
+                break;
+            }
+        }
+    }
+    canvas.addEventListener('mousedown', detecterSelectionMenu);
+    canvas.addEventListener('touchstart', detecterSelectionMenu, { passive: false });
+
+    const commandes = { gauche: false, droite: false, haut: false, bas: false };
+    function lierBouton(id, propriete) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        
+        const press = (e) => { e.preventDefault(); if (gameState === 'PLAYING') commandes[propriete] = true; };
+        const release = (e) => { e.preventDefault(); commandes[propriete] = false; };
+
+        btn.addEventListener('touchstart', press, { passive: false });
+        btn.addEventListener('touchend', release);
+        btn.addEventListener('mousedown', press);
+        btn.addEventListener('mouseup', release);
+        btn.addEventListener('mouseleave', release);
+    }
+    lierBouton('btn-gauche', 'gauche'); lierBouton('btn-droite', 'droite');
+    lierBouton('btn-haut', 'haut'); lierBouton('btn-bas', 'bas');
+    
+    function gererSaut(e) {
+        if(e) e.preventDefault();
+        if (gameState !== 'PLAYING' || enTransition) return;
+        if (player.compteurSauts < 2) {
+            jouerSon('saut'); 
+            player.vitesseY = puissanceSaut;
+            player.compteurSauts++;
+            player.auSol = false;
+        }
+    }
+    document.getElementById('btn-saut').addEventListener('touchstart', gererSaut, { passive: false });
+    document.getElementById('btn-saut').addEventListener('mousedown', gererSaut);
+
+    function gererTir(e) {
+        if(e) e.preventDefault();
+        if (gameState !== 'PLAYING' || enTransition) return;
+        
+        jouerSon('tir'); 
+        
+        let vx = 0; let vy = 0;
+        if (commandes.haut) vy = -7;
+        else if (commandes.bas && !player.auSol) vy = 7;
+        else vx = player.regardX * 7;
+        
+        bullets.push({ x: player.x + player.width / 2, y: player.y + player.height / 3, vX: vx, vY: vy, taille: 5 });
+        player.timerFlashTir = 5; 
+    }
+    document.getElementById('btn-tir').addEventListener('touchstart', gererTir, { passive: false });
+    document.getElementById('btn-tir').addEventListener('mousedown', gererTir);
+
+    function lancerLeJeu() { 
+        gererMusiqueIntro(false); // Coupe l'intro quand la partie commence
+
+        let t = 2;
+        if (niveauChoisi === 2) t = 3;
+        if (niveauChoisi === 3) t = 5;
+        
+        genererMonde(t);
+        let startX = Math.floor(t / 2);
+        let startY = t - 1;
+        chargerSalle(startX, startY);
+        
+        player.energie = 99;
+        score = 0;
+        chiffresTrouves = 0;
+        player.x = 190;
+        player.y = 240;
+        player.vitesseX = 0;
+        player.vitesseY = 0;
+        gameState = 'PLAYING'; 
+    }
+
+    function recommencerJeu() { 
+        gameState = 'TITLE';
+        niveauChoisi = 1;
+        tailleMonde = 2;
+        genererMonde(2);
+        dessinerMinimap();
+        gererMusiqueIntro(true); // Relance automatiquement la musique d'intro
+    }
+
+    function gererCollisionsPlatesformes() {
+        player.auSol = false;
+        if (!monde || !monde[carteX] || !monde[carteX][carteY]) return;
+        let platesformes = monde[carteX][carteY].plateformes || [];
+        
+        for (let plat of platesformes) {
+            if (player.x < plat.x + plat.w && player.x + player.width > plat.x &&
+                player.y < plat.y + plat.h && player.y + player.height > plat.y) {
+                
+                if (player.vitesseY >= 0 && (player.y + player.height - player.vitesseY) <= plat.y + 12) {
+                    player.y = plat.y - player.height; 
+                    player.vitesseY = 0; 
+                    player.compteurSauts = 0; 
+                    player.auSol = true;
+                } 
+                else if (player.vitesseY < 0 && (player.y - player.vitesseY) >= (plat.y + plat.h - 12)) {
+                    player.y = plat.y + plat.h; 
+                    player.vitesseY = 0;
+                }
+            }
+        }
+    }
+
+    function verifierCollision(rect1, rect2) {
+        return rect1.x < rect2.x + rect2.w && rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.h && rect1.y + rect1.height > rect2.y;
+    }
+
+    function update() {
+        if (gameState === 'TITLE') {
+            // Relance en continu si l'utilisateur a déjà interagi avec l'écran
+            if(audioCtx && audioCtx.state === 'running') gererMusiqueIntro(true);
+            return;
+        }
+        if (gameState !== 'PLAYING') return;
+
+        tickAnimation++; 
+        if (player.timerFlashTir > 0) player.timerFlashTir--;
+
+        if (enTransition) {
+            transitionTimer++;
+            let progression = transitionTimer / dureeTransition;
+
+            if (transitionType === "bas") {
+                offsetCamY = -canvas.height * progression;
+                player.y = 15 - (canvas.height * (1 - progression));
+            } else if (transitionType === "haut") {
+                offsetCamY = canvas.height * progression;
+                player.y = (canvas.height - player.height - 15) + (canvas.height * (1 - progression));
+            } else if (transitionType === "droite") {
+                offsetCamX = -canvas.width * progression;
+                player.x = 5 - (canvas.width * (1 - progression));
+            } else if (transitionType === "gauche") {
+                offsetCamX = canvas.width * progression;
+                player.x = (canvas.width - player.width - 5) + (canvas.width * (1 - progression));
+            }
+
+            if (transitionTimer >= dureeTransition) finaliserTransition();
+            return;
+        }
+
+        if (player.clignotementInvuln > 0) player.clignotementInvuln--;
+
+        if (commandes.gauche) { player.vitesseX = -vitesseCourse; player.regardX = -1; }
+        else if (commandes.droite) { player.vitesseX = vitesseCourse; player.regardX = 1; }
+        else { player.vitesseX = 0; }
+
+        player.x += player.vitesseX;
+        player.vitesseY += gravite;
+        player.y += player.vitesseY;
+
+        gererCollisionsPlatesformes();
+
+        if (player.clignotementInvuln === 0 && roomItems) {
+            for (let i = roomItems.length - 1; i >= 0; i--) {
+                let item = roomItems[i];
+                if (verifierCollision(player, item)) {
+                    let cifraAttesa = chiffresTrouves + 1;
+                    
+                    if (item.valeur === cifraAttesa) {
+                        roomItems.splice(i, 1); 
+                        jouerSon('item'); 
+                        
+                        if(monde && monde[carteX] && monde[carteX][carteY]) {
+                            monde[carteX][carteY].objets = [...roomItems]; 
+                        }
+
+                        chiffresTrouves++;
+                        score += 1000;
+                        
+                        if (chiffresTrouves >= totalChiffres) { 
+                            gameState = 'VICTORY'; 
+                            jouerFanfareVictoire(); // Déclenche la fanfare de victoire !
+                        }
+                    } else {
+                        player.energie -= 15;
+                        jouerSon('degat'); 
+                        player.clignotementInvuln = 45; 
+                        if (player.energie <= 0) { 
+                            player.energie = 0; 
+                            gameState = 'GAMEOVER'; 
+                            jouerFanfareDefaite(); // Déclenche la fanfare de défaite !
+                        }
+                    }
+                }
+            }
+        }
+
+        if (player.x > canvas.width - player.width + 5) {
+            if (carteX < tailleMonde - 1) initierTransition(carteX + 1, carteY, "droite");
+            else player.x = canvas.width - player.width;
+        }
+        if (player.x < -5) {
+            if (carteX > 0) initierTransition(carteX - 1, carteY, "gauche");
+            else player.x = 0;
+        }
+        
+        if (player.y < -player.height + 5) {
+            if (carteY > 0) initierTransition(carteX, carteY - 1, "haut");
+            else { player.y = 0; player.vitesseY = 0; }
+        }
+        if (player.y > canvas.height - 5) {
+            if (carteY < tailleMonde - 1) initierTransition(carteX, carteY + 1, "bas");
+            else { player.y = canvas.height - player.height; player.vitesseY = 0; }
+        }
+
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i]; b.x += b.vX; b.y += b.vY;
+            let detruit = false;
+            if (enemies) {
+                for (let j = enemies.length - 1; j >= 0; j--) {
+                    if (verifierCollision({x: b.x, y: b.y, width: b.taille, height: b.taille}, enemies[j])) {
+                        enemies.splice(j, 1); 
+                        jouerSon('explosion'); 
+                        detruit = true; 
+                        score += 100; 
+                        break;
+                    }
+                }
+            }
+            if (detruit || b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) bullets.splice(i, 1);
+        }
+
+        if (enemies) {
+            for (let e of enemies) {
+                if (e.type === 'rampant') { e.x += e.vX; if (e.x < e.limiteG || e.x > e.limiteD) e.vX = -e.vX; }
+                else if (e.type === 'volant') { e.angle += 0.05; e.x = e.xOrigine + Math.cos(e.angle) * 35; e.y = e.yOrigine + Math.sin(e.angle) * 25; }
+                
+                if (player.clignotementInvuln === 0 && verifierCollision(player, e)) {
+                    player.energie -= 15; 
+                    jouerSon('degat'); 
+                    player.clignotementInvuln = 60;
+                    player.vitesseY = -4; player.vitesseX = player.regardX === 1 ? -5 : 5; player.x += player.vitesseX;
+                    if (player.energie <= 0) { 
+                        player.energie = 0; 
+                        gameState = 'GAMEOVER'; 
+                        jouerFanfareDefaite(); // Déclenche la fanfare de défaite !
+                    }
+                }
+            }
+        }
+    }
+
+    function dessinerMonstre(e, ox, oy) {
+        let posX = e.x + ox;
+        let posY = e.y + oy;
+
+        if (e.type === 'rampant') {
+            ctx.fillStyle = '#ff3333';
+            let directionMonstre = e.vX > 0 ? 1 : -1;
+            
+            ctx.beginPath();
+            for (let i = 0; i < e.w; i += 2) {
+                let modifY = Math.sin((tickAnimation * 0.2) + (i * 0.5)) * 3;
+                ctx.fillRect(posX + i, posY + modifY + 4, 3, 4);
+            }
+            
+            ctx.fillStyle = '#ff6666';
+            if (directionMonstre === 1) {
+                ctx.fillRect(posX + e.w - 2, posY + Math.sin((tickAnimation * 0.2) + (e.w * 0.5)) * 3 + 2, 4, 5);
+            } else {
+                ctx.fillRect(posX, posY + Math.sin((tickAnimation * 0.2)) * 3 + 2, 4, 5);
+            }
+        } 
+        else if (e.type === 'volant') {
+            let centreX = posX + (e.w / 2);
+            let centreY = posY + (e.h / 2);
+            let battement = Math.sin(tickAnimation * 0.25); 
+
+            ctx.fillStyle = '#cc33ff'; 
+            
+            ctx.beginPath(); ctx.moveTo(centreX, centreY);
+            ctx.lineTo(centreX - 12, centreY - (battement * 7));
+            ctx.lineTo(centreX - 6, centreY + 4); ctx.closePath(); ctx.fill();
+
+            ctx.beginPath(); ctx.moveTo(centreX, centreY);
+            ctx.lineTo(centreX + 12, centreY - (battement * 7));
+            ctx.lineTo(centreX + 6, centreY + 4); ctx.closePath(); ctx.fill();
+
+            ctx.fillStyle = '#8811aa'; ctx.beginPath();
+            ctx.arc(centreX, centreY, 3, 0, Math.PI * 2); ctx.fill();
+
+            ctx.fillRect(centreX - 2, centreY - 6, 1, 3);
+            ctx.fillRect(centreX + 1, centreY - 6, 1, 3);
+        }
+    }
+
+    function dessinerJoueur() {
+        if (player.clignotementInvuln % 4 >= 2) return; 
+
+        let px = player.x;
+        let py = player.y;
+        let pw = player.width;
+        let ph = player.height;
+
+        ctx.fillStyle = '#ff6600';
+        if (player.regardX === 1) {
+            ctx.fillRect(px - 2, py + 12, 4, 14);
+        } else {
+            ctx.fillRect(px + pw - 2, py + 12, 4, 14);
+        }
+
+        ctx.fillStyle = '#0044aa'; 
+        let decalageJambe = (Math.floor(tickAnimation / 5) % 2 === 0 && player.vitesseX !== 0) ? 2 : 0;
+        ctx.fillRect(px + 2, py + 24, 5, 8 + (decalageJambe === 0 ? 0 : -1));
+        ctx.fillRect(px + pw - 7, py + 24, 5, 8 + (decalageJambe === 0 ? -1 : 0));
+        ctx.fillStyle = '#ff6600'; 
+        ctx.fillRect(px + 1, py + 30, 6, 2);
+        ctx.fillRect(px + pw - 8, py + 30, 6, 2);
+
+        ctx.fillStyle = '#0088ff';
+        ctx.fillRect(px + 1, py + 10, pw - 2, 14);
+        ctx.fillStyle = '#ff6600'; 
+        ctx.fillRect(px + 1, py + 21, pw - 2, 3);
+
+        ctx.fillStyle = '#ffffff'; 
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + 6, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#00ffcc';
+        if (player.regardX === 1) {
+            ctx.fillRect(px + pw / 2 - 1, py + 3, 5, 5);
+        } else {
+            ctx.fillRect(px + pw / 2 - 4, py + 3, 5, 5);
+        }
+
+        ctx.fillStyle = '#777777'; 
+        let canonX = px + pw / 2;
+        let canonY = py + 14;
+        let flashX = 0;
+        let flashY = 0;
+
+        if (commandes.haut) {
+            ctx.fillRect(px + (player.regardX === 1 ? pw / 2 : pw / 2 - 3), py - 4, 3, 10); 
+            ctx.fillStyle = '#ff6600'; 
+            ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 4), py + 6, 3, 8);
+            
+            flashX = px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 2);
+            flashY = py - 7;
+        } 
+        else if (commandes.bas && !player.auSol) {
+            ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 2 : pw / 2 - 5), py + 26, 3, 10); 
+            ctx.fillStyle = '#ff6600'; 
+            ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 4), py + 16, 3, 10);
+            
+            flashX = px + (player.regardX === 1 ? pw / 2 + 3 : pw / 2 - 4);
+            flashY = py + 38;
+        } 
+        else {
+            ctx.fillStyle = '#ff6600'; 
+            if (player.regardX === 1) {
+                ctx.fillRect(px + pw - 4, py + 12, 8, 4);  
+                ctx.fillStyle = '#777777';
+                ctx.fillRect(px + pw + 2, py + 10, 6, 3);   
+                ctx.fillRect(px + pw + 1, py + 12, 2, 4);   
+                flashX = px + pw + 10;
+                flashY = py + 11;
+            } else {
+                ctx.fillRect(px - 4, py + 12, 8, 4);   
+                ctx.fillStyle = '#777777';
+                ctx.fillRect(px - 8, py + 10, 6, 3);    
+                ctx.fillRect(px - 3, py + 12, 2, 4);    
+                flashX = px - 11;
+                flashY = py + 11;
+            }
+        }
+
+        if (player.timerFlashTir > 0) {
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(flashX, flashY, 5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+
+    function dessinerContenuSalle(salleX, salleY, ox, oy) {
+        if (!monde || !monde[salleX] || !monde[salleX][salleY]) return;
+        let s = monde[salleX][salleY];
+        
+        ctx.fillStyle = '#444';
+        if (s.plateformes) {
+            for (let plat of s.plateformes) ctx.fillRect(plat.x + ox, plat.y + oy, plat.w, plat.h);
+        }
+
+        let objetsADessiner = s.objets || [];
+
+        if (objetsADessiner) {
+            for (let obj of objetsADessiner) {
+                ctx.fillStyle = '#ffff00'; ctx.font = 'bold 16px monospace';
+                ctx.fillText(obj.valeur, obj.x + ox, obj.y + oy + 14);
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.4)';
+                ctx.strokeRect(obj.x + ox - 2, obj.y + oy, obj.w + 4, obj.h);
+            }
+        }
+        
+        if (!enTransition) {
+            if (enemies) {
+                for (let e of enemies) dessinerMonstre(e, ox, oy);
+            }
+        } else {
+            if (s.ennemis) {
+                for (let e of s.ennemis) dessinerMonstre(e, ox, oy);
+            }
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (gameState === 'TITLE') {
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#ff3333'; ctx.font = 'bold 24px sans-serif';
+            ctx.fillText("DEFI4 - PATROID", canvas.width / 2, 40);
+
+            ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+            ctx.fillRect(20, 55, canvas.width - 40, 70); ctx.strokeRect(20, 55, canvas.width - 40, 70);
+
+            ctx.textAlign = 'left'; ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 11px monospace';
+            ctx.fillText("CHOIX DE LA DIFFICULTÉ :", 30, 75);
+
+            boutonsMenu.forEach(n => {
+                let lbl = n.id === 1 ? "NIV. 1 (2x2)" : n.id === 2 ? "NIV. 2 (3x3)" : "NIV. 3 (5x5)";
+                ctx.fillStyle = niveauChoisi === n.id ? '#ff3333' : '#333';
+                ctx.fillRect(n.x, n.y, n.w, n.h);
+                ctx.strokeStyle = niveauChoisi === n.id ? '#fff' : '#555';
+                ctx.strokeRect(n.x, n.y, n.w, n.h);
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(lbl, n.x + n.w/2, n.y + 16);
+            });
+
+            ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif';
+            ctx.fillText("Ramassez tous les chiffres dans l'ordre croissant.", canvas.width / 2, 160);
+            ctx.fillStyle = '#ff9999';
+            ctx.fillText("START pour lancer le jeu, PAUSE pour l'arrêter.", canvas.width / 2, 185);
+
+            if (Math.floor(Date.now() / 400) % 2 === 0) {
+                ctx.fillStyle = '#ffcc00'; ctx.font = 'bold 11px monospace';
+                ctx.fillText("APPUYEZ SUR L'ÉCRAN / START POUR JOUER", canvas.width / 2, 245);
+            }
+            return;
+        }
+
+        if (gameState === 'PAUSE') {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#ffcc00'; ctx.font = 'bold 26px sans-serif';
+            ctx.fillText("PAUSE", canvas.width / 2, 130);
+            ctx.fillStyle = '#fff'; ctx.font = '11px monospace';
+            ctx.fillText("Appuyez sur START pour reprendre", canvas.width / 2, 170);
+            return;
+        }
+
+        if (gameState === 'GAMEOVER') {
+            ctx.fillStyle = 'rgba(20, 0, 0, 0.9)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#ff3333'; ctx.font = 'bold 28px sans-serif';
+            ctx.fillText("GAME OVER", canvas.width / 2, 120);
+            ctx.fillStyle = '#fff'; ctx.font = '13px monospace';
+            ctx.fillText("Énergie épuisée ou mauvaise cible !", canvas.width / 2, 155);
+            ctx.fillStyle = '#ffcc00'; ctx.font = '11px monospace';
+            ctx.fillText("APPUYEZ SUR START POUR RECOMMENCER", canvas.width / 2, 210);
+            return;
+        }
+
+        if (gameState === 'VICTORY') {
+            ctx.fillStyle = 'rgba(0, 20, 10, 0.9)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.textAlign = 'center'; ctx.fillStyle = '#00ffcc'; ctx.font = 'bold 26px sans-serif';
+            ctx.fillText("MISSION REUSSIE !", canvas.width / 2, 110);
+            ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
+            ctx.fillText(`Tous les objectifs du niveau sont validés.`, canvas.width / 2, 145);
+            ctx.fillText(`Score Final : ${score.toString().padStart(6, '0')}`, canvas.width / 2, 170);
+            ctx.fillStyle = '#ffcc00'; ctx.font = '11px monospace';
+            ctx.fillText("APPUYEZ SUR START POUR REVENIR", canvas.width / 2, 220);
+            return;
+        }
+
+        if (enTransition) {
+            if (transitionType === "bas") {
+                dessinerContenuSalle(ancX, ancY, 0, offsetCamY);
+                dessinerContenuSalle(nouvX, nouvY, 0, offsetCamY + canvas.height);
+            } else if (transitionType === "haut") {
+                dessinerContenuSalle(ancX, ancY, 0, offsetCamY);
+                dessinerContenuSalle(nouvX, nouvY, 0, offsetCamY - canvas.height);
+            } else if (transitionType === "droite") {
+                dessinerContenuSalle(ancX, ancY, offsetCamX, 0);
+                dessinerContenuSalle(nouvX, nouvY, offsetCamX + canvas.width, 0);
+            } else if (transitionType === "gauche") {
+                dessinerContenuSalle(ancX, ancY, offsetCamX, 0);
+                dessinerContenuSalle(nouvX, nouvY, offsetCamX - canvas.width, 0);
+            }
+        } else {
+            dessinerContenuSalle(carteX, carteY, 0, 0);
+        }
+
+        ctx.fillStyle = '#ffcc00';
+        for (let b of bullets) ctx.fillRect(b.x, b.y, b.taille, b.taille);
+
+        dessinerJoueur();
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#fff'; ctx.font = '10px monospace'; 
+        ctx.fillText("EN " + player.energie + " | OBJ: " + chiffresTrouves + "/" + totalChiffres, 15, 20);
+        
+        ctx.fillStyle = '#555'; ctx.fillRect(55, 25, 50, 6);
+        ctx.fillStyle = '#00ffcc'; ctx.fillRect(55, 25, (player.energie / player.maxEnergie) * 50, 6);
+
+        ctx.fillStyle = '#ffff00'; ctx.font = '11px monospace';
+        ctx.fillText("SCORE: " + score.toString().padStart(6, '0'), 15, 42);
+    }
+
+    function gameLoop() { 
+        try {
+            update(); 
+            draw(); 
+        } catch(err) {
+            console.error("Erreur détectée : ", err);
+        }
+        requestAnimationFrame(gameLoop); 
+    }
+
+    niveauChoisi = 1;
+    tailleMonde = 2;
+    genererMonde(2);
+    dessinerMinimap();
+    
+    gameLoop();
+</script>
+
+</body>
+</html>
