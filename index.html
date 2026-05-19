@@ -145,7 +145,7 @@
 
     let tickAnimation = 0;
 
-    // --- SYSTÈME AUDIO EMBARQUÉ + GÉNÉRATEUR DE MUSIQUE RÉTRO ---
+    // --- AUDIO ---
     let audioCtx = null;
     let introInterval = null; 
 
@@ -359,12 +359,12 @@
                 
                 if (cibleX > (plat.x + plat.w - 20)) continue;
                 
-                let cibleY = plat.y - 25;
+                let cibleY = plat.y - 28; // Ajusté pour le disque
                 let valeurChiffre = chiffresAPlacer.shift();
 
                 salle.objets.push({
                     valeur: valeurChiffre, 
-                    x: cibleX, y: cibleY, w: 20, h: 20, // Légèrement ajusté pour la forme de pièce
+                    x: cibleX, y: cibleY, w: 24, h: 24, // Taille du disque
                     yPlat: plat.y
                 });
             }
@@ -663,7 +663,6 @@
                         chiffresTrouves++;
                         score += 1000;
                         
-                        // SOIN : Récupère de l'énergie en ramassant la bonne pièce d'or !
                         player.energie += 15;
                         if (player.energie > player.maxEnergie) player.energie = player.maxEnergie;
                         
@@ -672,7 +671,6 @@
                             jouerFanfareVictoire(); 
                         }
                     } else {
-                        // DEGATS : Sanction si on touche une mauvaise pièce
                         player.energie -= 15;
                         jouerSon('degat'); 
                         player.clignotementInvuln = 45; 
@@ -949,31 +947,24 @@
                 let cx = obj.x + ox + obj.w / 2;
                 let cy = obj.y + oy + obj.h / 2;
                 
-                // Animation de l'éclat de la pièce basé sur le temps actuel
-                let brillance = Math.sin((tickAnimation * 0.1) + obj.valeur) * 2;
-
-                // Dessin du contour sombre de la pièce d'or
-                ctx.fillStyle = '#cc9900';
-                ctx.beginPath();
-                ctx.arc(cx, cy, (obj.w / 2) + 1, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Corps principal de la pièce (Or vif)
+                // Bordure dorée du disque
                 ctx.fillStyle = '#ffd700';
                 ctx.beginPath();
-                ctx.arc(cx, cy, (obj.w / 2) - 1, 0, Math.PI * 2);
+                ctx.arc(cx, cy, (obj.w / 2), 0, Math.PI * 2);
                 ctx.fill();
 
-                // Effet de reflet brillant à l'intérieur
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(cx - 3 + brillance, cy - 5, 2, 2);
+                // Fond noir uni pour un contraste maximal
+                ctx.fillStyle = '#000000';
+                ctx.beginPath();
+                ctx.arc(cx, cy, (obj.w / 2) - 2, 0, Math.PI * 2);
+                ctx.fill();
 
-                // Numéro inscrit au centre de la pièce d'or
-                ctx.fillStyle = '#553300'; // Marron foncé rétro pour la lisibilité
-                ctx.font = 'bold 11px monospace';
+                // --- TEXTE EN JAUNE D'OR VIF ---
+                ctx.font = 'bold 12px monospace';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.fillText(obj.valeur, cx, cy + 1);
+                ctx.fillStyle = '#ffd700'; 
+                ctx.fillText(obj.valeur, cx, cy);
             }
         }
         
@@ -1014,7 +1005,7 @@
             });
 
             ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif';
-            ctx.fillText("Ramassez toutes les pièces d'or dans l'ordre numérique.", canvas.width / 2, 160);
+            ctx.fillText("Ramassez tous les objectifs numériques dans l'ordre croissant.", canvas.width / 2, 160);
             ctx.fillStyle = '#ff9999';
             ctx.fillText("START pour lancer le jeu, PAUSE pour l'arrêter.", canvas.width / 2, 185);
 
@@ -1082,7 +1073,7 @@
 
         ctx.textAlign = 'left';
         ctx.fillStyle = '#fff'; ctx.font = '10px monospace'; 
-        ctx.fillText("EN " + player.energie + " | PIECES: " + chiffresTrouves + "/" + totalChiffres, 15, 20);
+        ctx.fillText("EN " + player.energie + " | OBJ: " + chiffresTrouves + "/" + totalChiffres, 15, 20);
         
         ctx.fillStyle = '#555'; ctx.fillRect(55, 25, 50, 6);
         ctx.fillStyle = '#00ffcc'; ctx.fillRect(55, 25, (player.energie / player.maxEnergie) * 50, 6);
