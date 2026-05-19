@@ -147,7 +147,7 @@
 
     // --- SYSTÈME AUDIO EMBARQUÉ + GÉNÉRATEUR DE MUSIQUE RÉTRO ---
     let audioCtx = null;
-    let introInterval = null; // Gère la boucle de la musique d'intro
+    let introInterval = null; 
 
     function initAudio() {
         if (!audioCtx) {
@@ -155,7 +155,6 @@
         }
     }
 
-    // Joue une note unique synthétisée à un moment précis
     function jouerNote(frequence, typeOnde, volume, depart, duree) {
         if (!audioCtx) return;
         let osc = audioCtx.createOscillator();
@@ -180,10 +179,9 @@
             if (introInterval) { clearInterval(introInterval); introInterval = null; }
             return;
         }
-        if (introInterval) return; // Déjà en cours de lecture
+        if (introInterval) return; 
 
-        // Petite boucle mélodique rétro d'ambiance mystérieuse/exploration (style Metroid)
-        const notesIntro = [130.81, 146.83, 155.56, 196.00, 155.56, 196.00, 220.00, 196.00]; // Do, Ré, Mib, Sol...
+        const notesIntro = [130.81, 146.83, 155.56, 196.00, 155.56, 196.00, 220.00, 196.00]; 
         let indexNote = 0;
 
         introInterval = setInterval(() => {
@@ -198,24 +196,22 @@
 
     function jouerFanfareVictoire() {
         gererMusiqueIntro(false);
-        // Mélodie héroïque montante et joyeuse
         let rythme = 0.12;
-        jouerNote(261.63, 'square', 0.1, 0 * rythme, 0.1); // Do
-        jouerNote(329.63, 'square', 0.1, 1 * rythme, 0.1); // Mi
-        jouerNote(392.00, 'square', 0.1, 2 * rythme, 0.1); // Sol
-        jouerNote(523.25, 'square', 0.1, 3 * rythme, 0.15); // Do Octave
-        jouerNote(392.00, 'square', 0.1, 4.5 * rythme, 0.1); // Sol
-        jouerNote(523.25, 'square', 0.12, 5.5 * rythme, 0.4); // Do Octave soutenu !
+        jouerNote(261.63, 'square', 0.1, 0 * rythme, 0.1); 
+        jouerNote(329.63, 'square', 0.1, 1 * rythme, 0.1); 
+        jouerNote(392.00, 'square', 0.1, 2 * rythme, 0.1); 
+        jouerNote(523.25, 'square', 0.1, 3 * rythme, 0.15); 
+        jouerNote(392.00, 'square', 0.1, 4.5 * rythme, 0.1); 
+        jouerNote(523.25, 'square', 0.12, 5.5 * rythme, 0.4); 
     }
 
     function jouerFanfareDefaite() {
         gererMusiqueIntro(false);
-        // Notes lourdes, dramatiques et descendantes
         let rythme = 0.16;
-        jouerNote(220.00, 'sawtooth', 0.12, 0 * rythme, 0.15); // La
-        jouerNote(207.65, 'sawtooth', 0.12, 1 * rythme, 0.15); // Lab
-        jouerNote(196.00, 'sawtooth', 0.12, 2 * rythme, 0.15); // Sol
-        jouerNote(174.61, 'sawtooth', 0.15, 3 * rythme, 0.5);  // Fa bas et dramatique
+        jouerNote(220.00, 'sawtooth', 0.12, 0 * rythme, 0.15); 
+        jouerNote(207.65, 'sawtooth', 0.12, 1 * rythme, 0.15); 
+        jouerNote(196.00, 'sawtooth', 0.12, 2 * rythme, 0.15); 
+        jouerNote(174.61, 'sawtooth', 0.15, 3 * rythme, 0.5);  
     }
 
     function jouerSon(type) {
@@ -319,7 +315,7 @@
                     if (!(x === carteX && y === carteY)) {
                         ennemis.push({ type: 'volant', x: 200, y: 140, w: 24, h: 16, angle: 0, xOrigine: 200, yOrigine: 140 });
                         ennemis.push({ type: 'volant', x: 200, y: 80, w: 24, h: 16, angle: Math.PI, xOrigine: 200, yOrigine: 80 });
-                        ennemis.push({ type: 'rampant', x: 50, y: 170, w: 24, h: 10, vX: 1.0, limiteG: 45, limiteD: 115 });
+                        ennemis.push({ type: 'rampant', x: 50, y: 173, w: 24, h: 12, vX: 1.0, limiteG: 45, limiteD: 115 });
                     }
                 } 
                 else {
@@ -330,8 +326,8 @@
                     platesformes.push({ x: 0, y: 0, w: 400, h: 15 });
                     platesformes.push({ x: 0, y: 285, w: 400, h: 15 });
 
-                    ennemis.push({ type: 'rampant', x: 140, y: 150, w: 24, h: 10, vX: 1.2, limiteG: 125, limiteD: 250 });
-                    ennemis.push({ type: 'rampant', x: 20, y: 235, w: 24, h: 10, vX: -1.0, limiteG: 5, limiteD: 75 });
+                    ennemis.push({ type: 'rampant', x: 140, y: 148, w: 24, h: 12, vX: 1.2, limiteG: 125, limiteD: 250 });
+                    ennemis.push({ type: 'rampant', x: 20, y: 233, w: 24, h: 12, vX: -1.0, limiteG: 5, limiteD: 75 });
                     ennemis.push({ type: 'volant', x: 200, y: 70, w: 24, h: 16, angle: x * 1.5, xOrigine: 200, yOrigine: 70 });
                 }
                 monde[x][y] = { plateformes: platesformes, ennemis: ennemis, objets: [] };
@@ -471,7 +467,6 @@
     btnPause.addEventListener('click', declencherPause);
 
     function detecterSelectionMenu(e) {
-        // Active et démarre la musique d'intro dès le premier clic de l'utilisateur sur le menu !
         gererMusiqueIntro(true);
 
         if (gameState !== 'TITLE') return;
@@ -549,7 +544,7 @@
     document.getElementById('btn-tir').addEventListener('mousedown', gererTir);
 
     function lancerLeJeu() { 
-        gererMusiqueIntro(false); // Coupe l'intro quand la partie commence
+        gererMusiqueIntro(false); 
 
         let t = 2;
         if (niveauChoisi === 2) t = 3;
@@ -576,7 +571,7 @@
         tailleMonde = 2;
         genererMonde(2);
         dessinerMinimap();
-        gererMusiqueIntro(true); // Relance automatiquement la musique d'intro
+        gererMusiqueIntro(true); 
     }
 
     function gererCollisionsPlatesformes() {
@@ -609,7 +604,6 @@
 
     function update() {
         if (gameState === 'TITLE') {
-            // Relance en continu si l'utilisateur a déjà interagi avec l'écran
             if(audioCtx && audioCtx.state === 'running') gererMusiqueIntro(true);
             return;
         }
@@ -671,7 +665,7 @@
                         
                         if (chiffresTrouves >= totalChiffres) { 
                             gameState = 'VICTORY'; 
-                            jouerFanfareVictoire(); // Déclenche la fanfare de victoire !
+                            jouerFanfareVictoire(); 
                         }
                     } else {
                         player.energie -= 15;
@@ -680,7 +674,7 @@
                         if (player.energie <= 0) { 
                             player.energie = 0; 
                             gameState = 'GAMEOVER'; 
-                            jouerFanfareDefaite(); // Déclenche la fanfare de défaite !
+                            jouerFanfareDefaite(); 
                         }
                     }
                 }
@@ -735,7 +729,7 @@
                     if (player.energie <= 0) { 
                         player.energie = 0; 
                         gameState = 'GAMEOVER'; 
-                        jouerFanfareDefaite(); // Déclenche la fanfare de défaite !
+                        jouerFanfareDefaite(); 
                     }
                 }
             }
@@ -747,21 +741,37 @@
         let posY = e.y + oy;
 
         if (e.type === 'rampant') {
-            ctx.fillStyle = '#ff3333';
             let directionMonstre = e.vX > 0 ? 1 : -1;
+            ctx.fillStyle = '#00cc33'; // Beau vert serpent
             
-            ctx.beginPath();
-            for (let i = 0; i < e.w; i += 2) {
-                let modifY = Math.sin((tickAnimation * 0.2) + (i * 0.5)) * 3;
-                ctx.fillRect(posX + i, posY + modifY + 4, 3, 4);
+            // Dessin du corps ondulant en segments carrés pixelisés
+            let nbSegments = 5;
+            let tailleSegment = e.w / nbSegments;
+            
+            for (let i = 0; i < nbSegments; i++) {
+                let segX = posX + (i * tailleSegment);
+                // Oscillation sinusoïdale décalée pour créer l'effet de reptation
+                let modifY = Math.sin((tickAnimation * 0.25) + (i * 0.8)) * 3;
+                
+                // Dessin du segment de corps
+                ctx.fillRect(segX, posY + modifY + 4, tailleSegment, 5);
+                
+                // Petites écailles plus sombres sur le dessus
+                ctx.fillStyle = '#008822';
+                ctx.fillRect(segX + 1, posY + modifY + 3, 2, 1);
+                ctx.fillStyle = '#00cc33';
             }
             
-            ctx.fillStyle = '#ff6666';
-            if (directionMonstre === 1) {
-                ctx.fillRect(posX + e.w - 2, posY + Math.sin((tickAnimation * 0.2) + (e.w * 0.5)) * 3 + 2, 4, 5);
-            } else {
-                ctx.fillRect(posX, posY + Math.sin((tickAnimation * 0.2)) * 3 + 2, 4, 5);
-            }
+            // Dessin de la tête (à l'avant selon la direction)
+            ctx.fillStyle = '#00aa22';
+            let teteX = directionMonstre === 1 ? posX + e.w - 3 : posX;
+            let modifYTete = Math.sin((tickAnimation * 0.25) + (directionMonstre === 1 ? nbSegments : 0) * 0.8) * 3;
+            ctx.fillRect(teteX, posY + modifYTete + 2, 4, 6);
+            
+            // Petit œil noir pour lui donner de l'expression
+            ctx.fillStyle = '#000000';
+            let oeilX = directionMonstre === 1 ? teteX + 2 : teteX + 1;
+            ctx.fillRect(oeilX, posY + modifYTete + 3, 1, 1);
         } 
         else if (e.type === 'volant') {
             let centreX = posX + (e.w / 2);
@@ -802,12 +812,31 @@
         }
 
         ctx.fillStyle = '#0044aa'; 
-        let decalageJambe = (Math.floor(tickAnimation / 5) % 2 === 0 && player.vitesseX !== 0) ? 2 : 0;
-        ctx.fillRect(px + 2, py + 24, 5, 8 + (decalageJambe === 0 ? 0 : -1));
-        ctx.fillRect(px + pw - 7, py + 24, 5, 8 + (decalageJambe === 0 ? -1 : 0));
+        let hauteurJambeG = 8;
+        let hauteurJambeD = 8;
+        let decalageXG = 0;
+        let decalageXD = 0;
+
+        if (player.vitesseX !== 0 && player.auSol) {
+            let cycle = tickAnimation * 0.4;
+            hauteurJambeG = 8 + Math.floor(Math.sin(cycle) * 3);
+            hauteurJambeD = 8 + Math.floor(Math.sin(cycle + Math.PI) * 3);
+            decalageXG = Math.floor(Math.cos(cycle) * 2);
+            decalageXD = Math.floor(Math.cos(cycle + Math.PI) * 2);
+        } else if (!player.auSol) {
+            hauteurJambeG = 5;
+            hauteurJambeD = 9;
+        }
+
+        ctx.fillStyle = '#0044aa';
+        ctx.fillRect(px + 2 + decalageXG, py + 24, 5, hauteurJambeG);
         ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(px + 1, py + 30, 6, 2);
-        ctx.fillRect(px + pw - 8, py + 30, 6, 2);
+        ctx.fillRect(px + 1 + decalageXG, py + 24 + hauteurJambeG, 6, 2);
+
+        ctx.fillStyle = '#0044aa';
+        ctx.fillRect(px + pw - 7 + decalageXD, py + 24, 5, hauteurJambeD);
+        ctx.fillStyle = '#ff6600'; 
+        ctx.fillRect(px + pw - 8 + decalageXD, py + 24 + hauteurJambeD, 6, 2);
 
         ctx.fillStyle = '#0088ff';
         ctx.fillRect(px + 1, py + 10, pw - 2, 14);
@@ -879,9 +908,39 @@
         if (!monde || !monde[salleX] || !monde[salleX][salleY]) return;
         let s = monde[salleX][salleY];
         
-        ctx.fillStyle = '#444';
         if (s.plateformes) {
-            for (let plat of s.plateformes) ctx.fillRect(plat.x + ox, plat.y + oy, plat.w, plat.h);
+            for (let plat of s.plateformes) {
+                let rx = plat.x + ox;
+                let ry = plat.y + oy;
+
+                ctx.fillStyle = '#de3412';
+                ctx.fillRect(rx, ry + 2, plat.w, plat.h - 4);
+
+                ctx.fillStyle = '#ff6644';
+                ctx.fillRect(rx, ry, plat.w, 2);
+
+                ctx.fillStyle = '#8a1c05';
+                ctx.fillRect(rx, ry + plat.h - 2, plat.w, 2);
+
+                ctx.strokeStyle = '#ff6644';
+                ctx.lineWidth = 1.5;
+                
+                let pasChassis = 16; 
+                for (let xM = rx; xM < rx + plat.w; xM += pasChassis) {
+                    let largeurSegment = Math.min(pasChassis, (rx + plat.w) - xM);
+                    if (largeurSegment > 4) {
+                        ctx.beginPath();
+                        ctx.moveTo(xM, ry + 2);
+                        ctx.lineTo(xM + largeurSegment, ry + plat.h - 2);
+                        ctx.moveTo(xM + largeurSegment, ry + 2);
+                        ctx.lineTo(xM, ry + plat.h - 2);
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#8a1c05';
+                        ctx.fillRect(xM, ry + 2, 2, plat.h - 4);
+                    }
+                }
+            }
         }
 
         let objetsADessiner = s.objets || [];
