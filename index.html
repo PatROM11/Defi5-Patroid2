@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Defi4-Patroid</title>
+    <title>Défi4bis-Patroid2</title>
     <style>
         body {
             margin: 0; padding: 0; background-color: #111; color: #fff;
@@ -72,7 +72,7 @@
 
     <div class="hud-top">
         <div class="hud-text">
-            <div id="room-title">Defi4-Patroid</div>
+            <div id="room-title">Défi4bis-Patroid2</div>
             <div id="room-coords">ZONE: [X: 0, Y: 0]</div>
         </div>
         <div class="minimap-container" id="minimap"></div>
@@ -742,33 +742,27 @@
 
         if (e.type === 'rampant') {
             let directionMonstre = e.vX > 0 ? 1 : -1;
-            ctx.fillStyle = '#00cc33'; // Beau vert serpent
+            ctx.fillStyle = '#00cc33'; 
             
-            // Dessin du corps ondulant en segments carrés pixelisés
             let nbSegments = 5;
             let tailleSegment = e.w / nbSegments;
             
             for (let i = 0; i < nbSegments; i++) {
                 let segX = posX + (i * tailleSegment);
-                // Oscillation sinusoïdale décalée pour créer l'effet de reptation
                 let modifY = Math.sin((tickAnimation * 0.25) + (i * 0.8)) * 3;
                 
-                // Dessin du segment de corps
                 ctx.fillRect(segX, posY + modifY + 4, tailleSegment, 5);
                 
-                // Petites écailles plus sombres sur le dessus
                 ctx.fillStyle = '#008822';
                 ctx.fillRect(segX + 1, posY + modifY + 3, 2, 1);
                 ctx.fillStyle = '#00cc33';
             }
             
-            // Dessin de la tête (à l'avant selon la direction)
             ctx.fillStyle = '#00aa22';
             let teteX = directionMonstre === 1 ? posX + e.w - 3 : posX;
             let modifYTete = Math.sin((tickAnimation * 0.25) + (directionMonstre === 1 ? nbSegments : 0) * 0.8) * 3;
             ctx.fillRect(teteX, posY + modifYTete + 2, 4, 6);
             
-            // Petit œil noir pour lui donner de l'expression
             ctx.fillStyle = '#000000';
             let oeilX = directionMonstre === 1 ? teteX + 2 : teteX + 1;
             ctx.fillRect(oeilX, posY + modifYTete + 3, 1, 1);
@@ -971,7 +965,7 @@
         if (gameState === 'TITLE') {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.textAlign = 'center'; ctx.fillStyle = '#ff3333'; ctx.font = 'bold 24px sans-serif';
-            ctx.fillText("DEFI4 - PATROID", canvas.width / 2, 40);
+            ctx.fillText("DEFI4BIS - PATROID2", canvas.width / 2, 40);
 
             ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
             ctx.fillRect(20, 55, canvas.width - 40, 70); ctx.strokeRect(20, 55, canvas.width - 40, 70);
