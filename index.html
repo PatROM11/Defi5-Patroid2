@@ -354,17 +354,17 @@
                 if (plat.y <= 0 || plat.y >= 285) continue;
 
                 let objetsSurCettePlat = salle.objets.filter(o => o.yPlat === plat.y);
-                let decalage = (objetsSurCettePlat.length * 40) + 20;
+                let decalage = (objetsSurCettePlat.length * 45) + 20;
                 let cibleX = plat.x + decalage;
                 
-                if (cibleX > (plat.x + plat.w - 20)) continue;
+                if (cibleX > (plat.x + plat.w - 30)) continue;
                 
-                let cibleY = plat.y - 28; // Ajusté pour le disque
+                let cibleY = plat.y - 32; // Ajusté pour le bloc de 28px
                 let valeurChiffre = chiffresAPlacer.shift();
 
                 salle.objets.push({
                     valeur: valeurChiffre, 
-                    x: cibleX, y: cibleY, w: 24, h: 24, // Taille du disque
+                    x: cibleX, y: cibleY, w: 28, h: 28, // Dimensions du bloc carré d'origine (28x28)
                     yPlat: plat.y
                 });
             }
@@ -944,27 +944,23 @@
 
         if (objetsADessiner) {
             for (let obj of objetsADessiner) {
-                let cx = obj.x + ox + obj.w / 2;
-                let cy = obj.y + oy + obj.h / 2;
+                let rx = obj.x + ox;
+                let ry = obj.y + oy;
                 
-                // Bordure dorée du disque
+                // Bordure dorée extérieure du bloc carré
                 ctx.fillStyle = '#ffd700';
-                ctx.beginPath();
-                ctx.arc(cx, cy, (obj.w / 2), 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillRect(rx, ry, obj.w, obj.h);
 
-                // Fond noir uni pour un contraste maximal
+                // Intérieur noir uni pour un contraste maximal (laisse 2px de bordure)
                 ctx.fillStyle = '#000000';
-                ctx.beginPath();
-                ctx.arc(cx, cy, (obj.w / 2) - 2, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.fillRect(rx + 2, ry + 2, obj.w - 4, obj.h - 4);
 
-                // --- TEXTE EN JAUNE D'OR VIF ---
-                ctx.font = 'bold 12px monospace';
+                // --- TEXTE GRAND FORMAT EN JAUNE D'OR VIF ---
+                ctx.font = 'bold 15px monospace'; // Taille augmentée à 15px pour une lisibilité parfaite
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#ffd700'; 
-                ctx.fillText(obj.valeur, cx, cy);
+                ctx.fillText(obj.valeur, rx + obj.w / 2, ry + obj.h / 2);
             }
         }
         
