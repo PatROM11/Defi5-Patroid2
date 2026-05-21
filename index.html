@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Défi4bis-Patroid2</title>
+    <title>Defi4-Patroid</title>
     <style>
         body {
             margin: 0; padding: 0; background-color: #111; color: #fff;
@@ -49,7 +49,58 @@
         }
 
         .d-pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 5px; }
-        .action-btns { display: flex; gap: 15px; }
+        .action-btns { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; max-width: 130px; }
+
+        #exit-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 999;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        #exit-overlay.visible { display: flex; }
+        #exit-countdown {
+            font-size: 72px; font-weight: bold; color: #ff3333;
+            font-family: monospace; text-shadow: 0 0 20px #ff0000;
+        }
+
+        .game-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.92); z-index: 500;
+            justify-content: center; align-items: center; flex-direction: column; gap: 12px;
+        }
+        .game-overlay.visible { display: flex; }
+
+        #saisie-titre { font-size: 18px; font-weight: bold; color: #00ffcc; font-family: monospace; }
+        #saisie-score-affiche { font-size: 14px; color: #ffff00; font-family: monospace; }
+        #saisie-input {
+            font-size: 20px; font-family: monospace; padding: 8px 14px;
+            background: #1a1a1a; color: #fff; border: 2px solid #00ffcc;
+            border-radius: 6px; text-align: center; width: 200px; outline: none;
+            text-transform: uppercase;
+        }
+        #saisie-valider {
+            font-size: 14px; font-weight: bold; font-family: monospace;
+            background: #224422; border: 2px solid #44aa44; color: #fff;
+            padding: 10px 30px; border-radius: 6px; cursor: pointer;
+        }
+
+        #hs-overlay { }
+        #hs-titre { font-size: 18px; font-weight: bold; color: #ffcc00; font-family: monospace; margin-bottom: 4px; }
+        #hs-nav { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+        #hs-nav button {
+            background: #333; border: 2px solid #555; color: #fff;
+            font-size: 18px; width: 36px; height: 36px; border-radius: 6px; cursor: pointer;
+        }
+        #hs-niveau-label { font-size: 14px; color: #00ffcc; font-family: monospace; min-width: 100px; text-align: center; }
+        #hs-liste {
+            font-family: monospace; font-size: 13px; color: #fff;
+            background: #111; border: 2px solid #333; border-radius: 6px;
+            padding: 10px 16px; min-width: 260px; min-height: 180px;
+        }
+        #hs-fermer {
+            font-size: 13px; font-weight: bold; font-family: monospace;
+            background: #441111; border: 2px solid #aa2222; color: #fff;
+            padding: 8px 24px; border-radius: 6px; cursor: pointer; margin-top: 6px;
+        }
 
         .btn {
             background-color: #444; border: 3px solid #666; border-radius: 10px;
@@ -72,7 +123,7 @@
 
     <div class="hud-top">
         <div class="hud-text">
-            <div id="room-title">Défi4bis-Patroid2</div>
+            <div id="room-title">Defi4-Patroid</div>
             <div id="room-coords">ZONE: [X: 0, Y: 0]</div>
         </div>
         <div class="minimap-container" id="minimap"></div>
@@ -83,6 +134,7 @@
     <div class="system-controls">
         <button class="btn-system" id="btn-start">START</button>
         <button class="btn-system" id="btn-pause">PAUSE</button>
+        <button class="btn-system" id="btn-highscore" style="display:none; background-color:#1a1a44; border-color:#4444aa;">🏆</button>
     </div>
 
     <div class="controls">
@@ -96,8 +148,34 @@
         <div class="action-btns">
             <div class="btn btn-action" id="btn-saut" style="background-color: #a00; border-color: #d00;">A</div>
             <div class="btn btn-action" id="btn-tir" style="background-color: #0a0; border-color: #0d0;">B</div>
+            <div class="btn btn-action" id="btn-exit" style="background-color: #222; border-color: #666; font-size: 11px; width: 52px; height: 30px; border-radius: 6px; margin-top: 5px;">EXIT</div>
         </div>
     </div>
+
+<div id="exit-overlay">
+    <div id="exit-countdown">3</div>
+</div>
+
+<!-- Overlay saisie du prénom après une partie -->
+<div class="game-overlay" id="saisie-overlay">
+    <div id="saisie-titre">PARTIE TERMINÉE</div>
+    <div id="saisie-score-affiche">SCORE : 000000</div>
+    <div style="font-size:12px; color:#aaa; font-family:monospace;">Entre ton prénom pour le classement :</div>
+    <input id="saisie-input" type="text" maxlength="12" placeholder="PRÉNOM" autocomplete="off" />
+    <button id="saisie-valider">VALIDER</button>
+</div>
+
+<!-- Overlay highscores -->
+<div class="game-overlay" id="hs-overlay">
+    <div id="hs-titre">🏆 HIGHSCORES</div>
+    <div id="hs-nav">
+        <button id="hs-prev">◀</button>
+        <div id="hs-niveau-label">NIV. 0</div>
+        <button id="hs-next">▶</button>
+    </div>
+    <div id="hs-liste"></div>
+    <button id="hs-fermer">FERMER</button>
+</div>
 
 <script>
     const canvas = document.getElementById('gameCanvas');
@@ -108,8 +186,9 @@
     const btnPause = document.getElementById('btn-pause');
 
     let gameState = 'TITLE'; 
-    let niveauChoisi = 1; 
+    let niveauChoisi = 0; 
     let tailleMonde = 2;
+    let tailleMondeH = 2; // hauteur du monde (nombre de rangées)
 
     let score = 0;
     let chiffresTrouves = 0;
@@ -145,9 +224,9 @@
 
     let tickAnimation = 0;
 
-    // --- AUDIO ---
+    // --- SYSTÈME AUDIO EMBARQUÉ + GÉNÉRATEUR DE MUSIQUE RÉTRO ---
     let audioCtx = null;
-    let introInterval = null; 
+    let introInterval = null; // Gère la boucle de la musique d'intro
 
     function initAudio() {
         if (!audioCtx) {
@@ -155,6 +234,7 @@
         }
     }
 
+    // Joue une note unique synthétisée à un moment précis
     function jouerNote(frequence, typeOnde, volume, depart, duree) {
         if (!audioCtx) return;
         let osc = audioCtx.createOscillator();
@@ -179,9 +259,10 @@
             if (introInterval) { clearInterval(introInterval); introInterval = null; }
             return;
         }
-        if (introInterval) return; 
+        if (introInterval) return; // Déjà en cours de lecture
 
-        const notesIntro = [130.81, 146.83, 155.56, 196.00, 155.56, 196.00, 220.00, 196.00]; 
+        // Petite boucle mélodique rétro d'ambiance mystérieuse/exploration (style Metroid)
+        const notesIntro = [130.81, 146.83, 155.56, 196.00, 155.56, 196.00, 220.00, 196.00]; // Do, Ré, Mib, Sol...
         let indexNote = 0;
 
         introInterval = setInterval(() => {
@@ -196,22 +277,24 @@
 
     function jouerFanfareVictoire() {
         gererMusiqueIntro(false);
+        // Mélodie héroïque montante et joyeuse
         let rythme = 0.12;
-        jouerNote(261.63, 'square', 0.1, 0 * rythme, 0.1); 
-        jouerNote(329.63, 'square', 0.1, 1 * rythme, 0.1); 
-        jouerNote(392.00, 'square', 0.1, 2 * rythme, 0.1); 
-        jouerNote(523.25, 'square', 0.1, 3 * rythme, 0.15); 
-        jouerNote(392.00, 'square', 0.1, 4.5 * rythme, 0.1); 
-        jouerNote(523.25, 'square', 0.12, 5.5 * rythme, 0.4); 
+        jouerNote(261.63, 'square', 0.1, 0 * rythme, 0.1); // Do
+        jouerNote(329.63, 'square', 0.1, 1 * rythme, 0.1); // Mi
+        jouerNote(392.00, 'square', 0.1, 2 * rythme, 0.1); // Sol
+        jouerNote(523.25, 'square', 0.1, 3 * rythme, 0.15); // Do Octave
+        jouerNote(392.00, 'square', 0.1, 4.5 * rythme, 0.1); // Sol
+        jouerNote(523.25, 'square', 0.12, 5.5 * rythme, 0.4); // Do Octave soutenu !
     }
 
     function jouerFanfareDefaite() {
         gererMusiqueIntro(false);
+        // Notes lourdes, dramatiques et descendantes
         let rythme = 0.16;
-        jouerNote(220.00, 'sawtooth', 0.12, 0 * rythme, 0.15); 
-        jouerNote(207.65, 'sawtooth', 0.12, 1 * rythme, 0.15); 
-        jouerNote(196.00, 'sawtooth', 0.12, 2 * rythme, 0.15); 
-        jouerNote(174.61, 'sawtooth', 0.15, 3 * rythme, 0.5);  
+        jouerNote(220.00, 'sawtooth', 0.12, 0 * rythme, 0.15); // La
+        jouerNote(207.65, 'sawtooth', 0.12, 1 * rythme, 0.15); // Lab
+        jouerNote(196.00, 'sawtooth', 0.12, 2 * rythme, 0.15); // Sol
+        jouerNote(174.61, 'sawtooth', 0.15, 3 * rythme, 0.5);  // Fa bas et dramatique
     }
 
     function jouerSon(type) {
@@ -273,24 +356,27 @@
     }
 
     const boutonsMenu = [
-        { id: 1, x: 40, y: 90, w: 90, h: 25 },
-        { id: 2, x: 155, y: 90, w: 90, h: 25 },
-        { id: 3, x: 270, y: 90, w: 90, h: 25 }
+        { id: 0, x: 30, y: 90, w: 70, h: 25 },
+        { id: 1, x: 110, y: 90, w: 70, h: 25 },
+        { id: 2, x: 190, y: 90, w: 70, h: 25 },
+        { id: 3, x: 270, y: 90, w: 70, h: 25 }
     ];
 
-    function genererMonde(taille) {
+    function genererMonde(taille, tailleH) {
         tailleMonde = taille;
-        monde = Array(tailleMonde).fill(null).map(() => Array(tailleMonde).fill(null));
+        tailleMondeH = tailleH !== undefined ? tailleH : taille;
+        monde = Array(tailleMonde).fill(null).map(() => Array(tailleMondeH).fill(null));
         
-        if (niveauChoisi === 1) totalChiffres = 5;
+        if (niveauChoisi === 0) totalChiffres = 3;
+        else if (niveauChoisi === 1) totalChiffres = 5;
         else if (niveauChoisi === 2) totalChiffres = 10;
         else if (niveauChoisi === 3) totalChiffres = 15;
 
         carteX = Math.floor(tailleMonde / 2);
-        carteY = tailleMonde - 1;
+        carteY = tailleMondeH - 1;
 
         for (let x = 0; x < tailleMonde; x++) {
-            for (let y = 0; y < tailleMonde; y++) {
+            for (let y = 0; y < tailleMondeH; y++) {
                 let platesformes = [];
                 let ennemis = [];
 
@@ -298,7 +384,7 @@
                     platesformes.push({ x: 40, y: 180, w: 100, h: 15 });
                     platesformes.push({ x: 260, y: 100, w: 100, h: 15 });
                     
-                    if (y === tailleMonde - 1) {
+                    if (y === tailleMondeH - 1) {
                         platesformes.push({ x: 0, y: 285, w: 400, h: 15 }); 
                     } else {
                         platesformes.push({ x: 0, y: 285, w: 130, h: 15 });
@@ -315,7 +401,7 @@
                     if (!(x === carteX && y === carteY)) {
                         ennemis.push({ type: 'volant', x: 200, y: 140, w: 24, h: 16, angle: 0, xOrigine: 200, yOrigine: 140 });
                         ennemis.push({ type: 'volant', x: 200, y: 80, w: 24, h: 16, angle: Math.PI, xOrigine: 200, yOrigine: 80 });
-                        ennemis.push({ type: 'rampant', x: 50, y: 173, w: 24, h: 12, vX: 1.0, limiteG: 45, limiteD: 115 });
+                        ennemis.push({ type: 'rampant', x: 50, y: 170, w: 24, h: 10, vX: 1.0, limiteG: 45, limiteD: 115 });
                     }
                 } 
                 else {
@@ -326,8 +412,8 @@
                     platesformes.push({ x: 0, y: 0, w: 400, h: 15 });
                     platesformes.push({ x: 0, y: 285, w: 400, h: 15 });
 
-                    ennemis.push({ type: 'rampant', x: 140, y: 148, w: 24, h: 12, vX: 1.2, limiteG: 125, limiteD: 250 });
-                    ennemis.push({ type: 'rampant', x: 20, y: 233, w: 24, h: 12, vX: -1.0, limiteG: 5, limiteD: 75 });
+                    ennemis.push({ type: 'rampant', x: 140, y: 150, w: 24, h: 10, vX: 1.2, limiteG: 125, limiteD: 250 });
+                    ennemis.push({ type: 'rampant', x: 20, y: 235, w: 24, h: 10, vX: -1.0, limiteG: 5, limiteD: 75 });
                     ennemis.push({ type: 'volant', x: 200, y: 70, w: 24, h: 16, angle: x * 1.5, xOrigine: 200, yOrigine: 70 });
                 }
                 monde[x][y] = { plateformes: platesformes, ennemis: ennemis, objets: [] };
@@ -336,37 +422,59 @@
 
         let chiffresAPlacer = [];
         for (let i = 1; i <= totalChiffres; i++) chiffresAPlacer.push(i);
-        
-        let protectionBoucle = 0;
-        while (chiffresAPlacer.length > 0 && protectionBoucle < 2000) {
-            protectionBoucle++;
-            
-            let rx = Math.floor(Math.random() * tailleMonde);
-            let ry = Math.floor(Math.random() * tailleMonde);
-            
-            if (!monde[rx] || !monde[rx][ry]) continue;
 
-            let salle = monde[rx][ry];
-            if (salle.plateformes && salle.plateformes.length > 0) {
-                let platIdx = Math.floor(Math.random() * salle.plateformes.length);
-                let plat = salle.plateformes[platIdx];
-
-                if (plat.y <= 0 || plat.y >= 285) continue;
-
-                let objetsSurCettePlat = salle.objets.filter(o => o.yPlat === plat.y);
-                let decalage = (objetsSurCettePlat.length * 45) + 20;
-                let cibleX = plat.x + decalage;
-                
-                if (cibleX > (plat.x + plat.w - 30)) continue;
-                
-                let cibleY = plat.y - 32; // Ajusté pour le bloc de 28px
-                let valeurChiffre = chiffresAPlacer.shift();
-
+        // Niveau 0 : on mélange les chiffres [1,2,3] et on en met exactement 1 par salle
+        if (niveauChoisi === 0) {
+            // Fisher-Yates shuffle sur [1,2,3]
+            let chiffresMelanges = [1, 2, 3];
+            for (let i = chiffresMelanges.length - 1; i > 0; i--) {
+                let j = Math.floor(Math.random() * (i + 1));
+                [chiffresMelanges[i], chiffresMelanges[j]] = [chiffresMelanges[j], chiffresMelanges[i]];
+            }
+            // Placer exactement 1 chiffre dans chaque salle (sx=0, sx=1, sx=2)
+            for (let sx = 0; sx < 3; sx++) {
+                let salle = monde[sx][0];
+                let platsValides = salle.plateformes.filter(p => p.y > 0 && p.y < 285);
+                let plat = platsValides[Math.floor(Math.random() * platsValides.length)];
                 salle.objets.push({
-                    valeur: valeurChiffre, 
-                    x: cibleX, y: cibleY, w: 28, h: 28, // Dimensions du bloc carré d'origine (28x28)
+                    valeur: chiffresMelanges[sx],
+                    x: plat.x + 20, y: plat.y - 25, w: 16, h: 20,
                     yPlat: plat.y
                 });
+            }
+            chiffresAPlacer = []; // vider pour ne pas passer dans le else
+        } else {
+            let protectionBoucle = 0;
+            while (chiffresAPlacer.length > 0 && protectionBoucle < 2000) {
+                protectionBoucle++;
+            
+                let rx = Math.floor(Math.random() * tailleMonde);
+                let ry = Math.floor(Math.random() * tailleMondeH);
+                
+                if (!monde[rx] || !monde[rx][ry]) continue;
+
+                let salle = monde[rx][ry];
+                if (salle.plateformes && salle.plateformes.length > 0) {
+                    let platIdx = Math.floor(Math.random() * salle.plateformes.length);
+                    let plat = salle.plateformes[platIdx];
+
+                    if (plat.y <= 0 || plat.y >= 285) continue;
+
+                    let objetsSurCettePlat = salle.objets.filter(o => o.yPlat === plat.y);
+                    let decalage = (objetsSurCettePlat.length * 40) + 20;
+                    let cibleX = plat.x + decalage;
+                    
+                    if (cibleX > (plat.x + plat.w - 20)) continue;
+                    
+                    let cibleY = plat.y - 25;
+                    let valeurChiffre = chiffresAPlacer.shift();
+
+                    salle.objets.push({
+                        valeur: valeurChiffre, 
+                        x: cibleX, y: cibleY, w: 16, h: 20,
+                        yPlat: plat.y
+                    });
+                }
             }
         }
     }
@@ -374,16 +482,20 @@
     function dessinerMinimap() {
         minimap.innerHTML = "";
         let t = tailleMonde || 2;
+        let th = tailleMondeH || t;
         if (gameState === 'TITLE') {
-            t = niveauChoisi === 1 ? 2 : niveauChoisi === 2 ? 3 : 5;
+            if (niveauChoisi === 0) { t = 3; th = 1; }
+            else if (niveauChoisi === 1) { t = 2; th = 2; }
+            else if (niveauChoisi === 2) { t = 3; th = 3; }
+            else { t = 5; th = 5; }
         }
         minimap.style.gridTemplateColumns = `repeat(${t}, 10px)`;
-        minimap.style.gridTemplateRows = `repeat(${t}, 10px)`;
+        minimap.style.gridTemplateRows = `repeat(${th}, 10px)`;
 
         let activeX = Math.floor(t / 2);
-        let activeY = t - 1;
+        let activeY = th - 1;
 
-        for (let y = 0; y < t; y++) {
+        for (let y = 0; y < th; y++) {
             for (let x = 0; x < t; x++) {
                 const pixel = document.createElement('div');
                 pixel.classList.add('map-pixel');
@@ -403,7 +515,7 @@
         carteY = cy;
         roomCoords.textContent = `ZONE: [X: ${carteX}, Y: ${carteY}]`;
         enemies = JSON.parse(JSON.stringify(monde[carteX][carteY].ennemis || []));
-        roomItems = monde[carteX][carteY].objets || [];
+        roomItems = JSON.parse(JSON.stringify(monde[carteX][carteY].objets || []));
         dessinerMinimap();
     }
 
@@ -439,7 +551,7 @@
 
         if (monde && monde[carteX] && monde[carteX][carteY]) {
             enemies = JSON.parse(JSON.stringify(monde[carteX][carteY].ennemis || []));
-            roomItems = monde[carteX][carteY].objets || [];
+            roomItems = JSON.parse(JSON.stringify(monde[carteX][carteY].objets || []));
         }
         dessinerMinimap();
     }
@@ -450,8 +562,6 @@
             lancerLeJeu();
         } else if (gameState === 'PAUSE') {
             gameState = 'PLAYING';
-        } else if (gameState === 'GAMEOVER' || gameState === 'VICTORY') {
-            recommencerJeu();
         }
     }
     btnStart.addEventListener('touchstart', declencherStart, { passive: false });
@@ -467,6 +577,7 @@
     btnPause.addEventListener('click', declencherPause);
 
     function detecterSelectionMenu(e) {
+        // Active et démarre la musique d'intro dès le premier clic de l'utilisateur sur le menu !
         gererMusiqueIntro(true);
 
         if (gameState !== 'TITLE') return;
@@ -484,10 +595,11 @@
                 yCanvas >= btn.y && yCanvas <= (btn.y + btn.h)) {
                 niveauChoisi = btn.id;
                 
-                let t = 2;
-                if (niveauChoisi === 2) t = 3;
-                if (niveauChoisi === 3) t = 5;
-                genererMonde(t);
+                let t = 2; let th = 2;
+                if (niveauChoisi === 0) { t = 3; th = 1; }
+                else if (niveauChoisi === 2) { t = 3; th = 3; }
+                else if (niveauChoisi === 3) { t = 5; th = 5; }
+                genererMonde(t, th);
                 dessinerMinimap(); 
                 break;
             }
@@ -543,16 +655,74 @@
     document.getElementById('btn-tir').addEventListener('touchstart', gererTir, { passive: false });
     document.getElementById('btn-tir').addEventListener('mousedown', gererTir);
 
-    function lancerLeJeu() { 
-        gererMusiqueIntro(false); 
+    // --- BOUTON EXIT ---
+    let exitTimer = null;
+    let exitCompte = 0;
+    let exitInterval = null;
+    const exitOverlay = document.getElementById('exit-overlay');
+    const exitCountdown = document.getElementById('exit-countdown');
 
-        let t = 2;
-        if (niveauChoisi === 2) t = 3;
-        if (niveauChoisi === 3) t = 5;
+    function annulerExit() {
+        if (exitTimer) { clearTimeout(exitTimer); exitTimer = null; }
+        if (exitInterval) { clearInterval(exitInterval); exitInterval = null; }
+        exitOverlay.classList.remove('visible');
+    }
+
+    function lancerCompteRebours() {
+        exitCompte = 3;
+        exitCountdown.textContent = '3';
+        exitOverlay.classList.add('visible');
+
+        exitInterval = setInterval(() => {
+            exitCompte--;
+            if (exitCompte > 0) {
+                exitCountdown.textContent = String(exitCompte);
+            } else {
+                clearInterval(exitInterval);
+                exitInterval = null;
+                exitCountdown.textContent = 'EXIT';
+                setTimeout(() => {
+                    exitOverlay.classList.remove('visible');
+                    if (gameState === 'TITLE') {
+                        // Sur le menu : fermer la fenêtre/onglet
+                        window.close();
+                        // Fallback si window.close() bloqué
+                        document.body.innerHTML = '<div style="color:#fff;background:#000;height:100vh;display:flex;align-items:center;justify-content:center;font-size:24px;font-family:monospace;">Programme terminé.</div>';
+                    } else {
+                        // En jeu : retour au menu
+                        recommencerJeu();
+                    }
+                }, 600);
+            }
+        }, 1000);
+    }
+
+    const btnExit = document.getElementById('btn-exit');
+
+    btnExit.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        exitTimer = setTimeout(lancerCompteRebours, 400);
+    });
+    btnExit.addEventListener('mouseup', annulerExit);
+    btnExit.addEventListener('mouseleave', annulerExit);
+    btnExit.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        exitTimer = setTimeout(lancerCompteRebours, 400);
+    }, { passive: false });
+    btnExit.addEventListener('touchend', annulerExit);
+    btnExit.addEventListener('touchcancel', annulerExit);
+
+    function lancerLeJeu() { 
+        gererMusiqueIntro(false); // Coupe l'intro quand la partie commence
+
+        let t = 2; let th = 2;
+        if (niveauChoisi === 0) { t = 3; th = 1; }
+        else if (niveauChoisi === 2) { t = 3; th = 3; }
+        else if (niveauChoisi === 3) { t = 5; th = 5; }
         
-        genererMonde(t);
+        genererMonde(t, th);
         let startX = Math.floor(t / 2);
-        let startY = t - 1;
+        let startY = th - 1;
         chargerSalle(startX, startY);
         
         player.energie = 99;
@@ -562,16 +732,19 @@
         player.y = 240;
         player.vitesseX = 0;
         player.vitesseY = 0;
-        gameState = 'PLAYING'; 
+        gameState = 'PLAYING';
+        majVisibiliteHs();
     }
 
     function recommencerJeu() { 
         gameState = 'TITLE';
-        niveauChoisi = 1;
-        tailleMonde = 2;
-        genererMonde(2);
+        niveauChoisi = 0;
+        tailleMonde = 3;
+        tailleMondeH = 1;
+        genererMonde(3, 1);
         dessinerMinimap();
-        gererMusiqueIntro(true); 
+        gererMusiqueIntro(true);
+        majVisibiliteHs();
     }
 
     function gererCollisionsPlatesformes() {
@@ -604,6 +777,7 @@
 
     function update() {
         if (gameState === 'TITLE') {
+            // Relance en continu si l'utilisateur a déjà interagi avec l'écran
             if(audioCtx && audioCtx.state === 'running') gererMusiqueIntro(true);
             return;
         }
@@ -663,21 +837,21 @@
                         chiffresTrouves++;
                         score += 1000;
                         
-                        player.energie += 15;
-                        if (player.energie > player.maxEnergie) player.energie = player.maxEnergie;
-                        
                         if (chiffresTrouves >= totalChiffres) { 
                             gameState = 'VICTORY'; 
-                            jouerFanfareVictoire(); 
+                            jouerFanfareVictoire();
+                            setTimeout(() => afficherSaisieNom(true), 1500);
                         }
                     } else {
-                        player.energie -= 15;
+                        let penalite = niveauChoisi === 0 ? 3 : 5;
+                        player.energie -= penalite;
                         jouerSon('degat'); 
                         player.clignotementInvuln = 45; 
                         if (player.energie <= 0) { 
                             player.energie = 0; 
                             gameState = 'GAMEOVER'; 
-                            jouerFanfareDefaite(); 
+                            jouerFanfareDefaite();
+                            setTimeout(() => afficherSaisieNom(false), 1500);
                         }
                     }
                 }
@@ -698,7 +872,7 @@
             else { player.y = 0; player.vitesseY = 0; }
         }
         if (player.y > canvas.height - 5) {
-            if (carteY < tailleMonde - 1) initierTransition(carteX, carteY + 1, "bas");
+            if (carteY < tailleMondeH - 1) initierTransition(carteX, carteY + 1, "bas");
             else { player.y = canvas.height - player.height; player.vitesseY = 0; }
         }
 
@@ -725,14 +899,15 @@
                 else if (e.type === 'volant') { e.angle += 0.05; e.x = e.xOrigine + Math.cos(e.angle) * 35; e.y = e.yOrigine + Math.sin(e.angle) * 25; }
                 
                 if (player.clignotementInvuln === 0 && verifierCollision(player, e)) {
-                    player.energie -= 15; 
+                    player.energie -= niveauChoisi === 0 ? 3 : 5; 
                     jouerSon('degat'); 
                     player.clignotementInvuln = 60;
                     player.vitesseY = -4; player.vitesseX = player.regardX === 1 ? -5 : 5; player.x += player.vitesseX;
                     if (player.energie <= 0) { 
                         player.energie = 0; 
                         gameState = 'GAMEOVER'; 
-                        jouerFanfareDefaite(); 
+                        jouerFanfareDefaite();
+                        setTimeout(() => afficherSaisieNom(false), 1500);
                     }
                 }
             }
@@ -744,31 +919,21 @@
         let posY = e.y + oy;
 
         if (e.type === 'rampant') {
+            ctx.fillStyle = '#ff3333';
             let directionMonstre = e.vX > 0 ? 1 : -1;
-            ctx.fillStyle = '#00cc33'; 
             
-            let nbSegments = 5;
-            let tailleSegment = e.w / nbSegments;
-            
-            for (let i = 0; i < nbSegments; i++) {
-                let segX = posX + (i * tailleSegment);
-                let modifY = Math.sin((tickAnimation * 0.25) + (i * 0.8)) * 3;
-                
-                ctx.fillRect(segX, posY + modifY + 4, tailleSegment, 5);
-                
-                ctx.fillStyle = '#008822';
-                ctx.fillRect(segX + 1, posY + modifY + 3, 2, 1);
-                ctx.fillStyle = '#00cc33';
+            ctx.beginPath();
+            for (let i = 0; i < e.w; i += 2) {
+                let modifY = Math.sin((tickAnimation * 0.2) + (i * 0.5)) * 3;
+                ctx.fillRect(posX + i, posY + modifY + 4, 3, 4);
             }
             
-            ctx.fillStyle = '#00aa22';
-            let teteX = directionMonstre === 1 ? posX + e.w - 3 : posX;
-            let modifYTete = Math.sin((tickAnimation * 0.25) + (directionMonstre === 1 ? nbSegments : 0) * 0.8) * 3;
-            ctx.fillRect(teteX, posY + modifYTete + 2, 4, 6);
-            
-            ctx.fillStyle = '#000000';
-            let oeilX = directionMonstre === 1 ? teteX + 2 : teteX + 1;
-            ctx.fillRect(oeilX, posY + modifYTete + 3, 1, 1);
+            ctx.fillStyle = '#ff6666';
+            if (directionMonstre === 1) {
+                ctx.fillRect(posX + e.w - 2, posY + Math.sin((tickAnimation * 0.2) + (e.w * 0.5)) * 3 + 2, 4, 5);
+            } else {
+                ctx.fillRect(posX, posY + Math.sin((tickAnimation * 0.2)) * 3 + 2, 4, 5);
+            }
         } 
         else if (e.type === 'volant') {
             let centreX = posX + (e.w / 2);
@@ -809,31 +974,35 @@
         }
 
         ctx.fillStyle = '#0044aa'; 
-        let hauteurJambeG = 8;
-        let hauteurJambeD = 8;
-        let decalageXG = 0;
-        let decalageXD = 0;
-
+        
+        // ANIMATION DES JAMBES : Mouvement de balancier (pas à pas)
+        let vitesseAnimation = 0;
+        let cycle = 0;
+        
         if (player.vitesseX !== 0 && player.auSol) {
-            let cycle = tickAnimation * 0.4;
-            hauteurJambeG = 8 + Math.floor(Math.sin(cycle) * 3);
-            hauteurJambeD = 8 + Math.floor(Math.sin(cycle + Math.PI) * 3);
-            decalageXG = Math.floor(Math.cos(cycle) * 2);
-            decalageXD = Math.floor(Math.cos(cycle + Math.PI) * 2);
+            // En course : animation rapide
+            vitesseAnimation = Math.abs(player.vitesseX) * 0.8;
+            cycle = Math.sin(tickAnimation * vitesseAnimation);
         } else if (!player.auSol) {
-            hauteurJambeG = 5;
-            hauteurJambeD = 9;
+            // En l'air : petit mouvement pendant le saut
+            cycle = Math.sin(tickAnimation * 0.25);
+        } else {
+            // Immobile : léger mouvement, mais surtout pour ne pas rester figé
+            cycle = Math.sin(tickAnimation * 0.1) * 0.3;
         }
-
-        ctx.fillStyle = '#0044aa';
-        ctx.fillRect(px + 2 + decalageXG, py + 24, 5, hauteurJambeG);
+        
+        // Décalage horizontal des jambes : entre -3 et +3 pixels
+        let decalageGauche = Math.floor(cycle * 3);
+        let decalageDroite = -Math.floor(cycle * 3);
+        
+        // Jambe gauche
+        ctx.fillRect(px + 2 + decalageGauche, py + 24, 5, 8);
+        // Jambe droite
+        ctx.fillRect(px + pw - 7 + decalageDroite, py + 24, 5, 8);
+        
         ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(px + 1 + decalageXG, py + 24 + hauteurJambeG, 6, 2);
-
-        ctx.fillStyle = '#0044aa';
-        ctx.fillRect(px + pw - 7 + decalageXD, py + 24, 5, hauteurJambeD);
-        ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(px + pw - 8 + decalageXD, py + 24 + hauteurJambeD, 6, 2);
+        ctx.fillRect(px + 1, py + 30, 6, 2);
+        ctx.fillRect(px + pw - 8, py + 30, 6, 2);
 
         ctx.fillStyle = '#0088ff';
         ctx.fillRect(px + 1, py + 10, pw - 2, 14);
@@ -905,62 +1074,19 @@
         if (!monde || !monde[salleX] || !monde[salleX][salleY]) return;
         let s = monde[salleX][salleY];
         
+        ctx.fillStyle = '#444';
         if (s.plateformes) {
-            for (let plat of s.plateformes) {
-                let rx = plat.x + ox;
-                let ry = plat.y + oy;
-
-                ctx.fillStyle = '#de3412';
-                ctx.fillRect(rx, ry + 2, plat.w, plat.h - 4);
-
-                ctx.fillStyle = '#ff6644';
-                ctx.fillRect(rx, ry, plat.w, 2);
-
-                ctx.fillStyle = '#8a1c05';
-                ctx.fillRect(rx, ry + plat.h - 2, plat.w, 2);
-
-                ctx.strokeStyle = '#ff6644';
-                ctx.lineWidth = 1.5;
-                
-                let pasChassis = 16; 
-                for (let xM = rx; xM < rx + plat.w; xM += pasChassis) {
-                    let largeurSegment = Math.min(pasChassis, (rx + plat.w) - xM);
-                    if (largeurSegment > 4) {
-                        ctx.beginPath();
-                        ctx.moveTo(xM, ry + 2);
-                        ctx.lineTo(xM + largeurSegment, ry + plat.h - 2);
-                        ctx.moveTo(xM + largeurSegment, ry + 2);
-                        ctx.lineTo(xM, ry + plat.h - 2);
-                        ctx.stroke();
-
-                        ctx.fillStyle = '#8a1c05';
-                        ctx.fillRect(xM, ry + 2, 2, plat.h - 4);
-                    }
-                }
-            }
+            for (let plat of s.plateformes) ctx.fillRect(plat.x + ox, plat.y + oy, plat.w, plat.h);
         }
 
         let objetsADessiner = s.objets || [];
 
         if (objetsADessiner) {
             for (let obj of objetsADessiner) {
-                let rx = obj.x + ox;
-                let ry = obj.y + oy;
-                
-                // Bordure dorée extérieure du bloc carré
-                ctx.fillStyle = '#ffd700';
-                ctx.fillRect(rx, ry, obj.w, obj.h);
-
-                // Intérieur noir uni pour un contraste maximal (laisse 2px de bordure)
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(rx + 2, ry + 2, obj.w - 4, obj.h - 4);
-
-                // --- TEXTE GRAND FORMAT EN JAUNE D'OR VIF ---
-                ctx.font = 'bold 15px monospace'; // Taille augmentée à 15px pour une lisibilité parfaite
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = '#ffd700'; 
-                ctx.fillText(obj.valeur, rx + obj.w / 2, ry + obj.h / 2);
+                ctx.fillStyle = '#ffff00'; ctx.font = 'bold 16px monospace';
+                ctx.fillText(obj.valeur, obj.x + ox, obj.y + oy + 14);
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.4)';
+                ctx.strokeRect(obj.x + ox - 2, obj.y + oy, obj.w + 4, obj.h);
             }
         }
         
@@ -981,7 +1107,7 @@
         if (gameState === 'TITLE') {
             ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.textAlign = 'center'; ctx.fillStyle = '#ff3333'; ctx.font = 'bold 24px sans-serif';
-            ctx.fillText("DEFI4BIS - PATROID2", canvas.width / 2, 40);
+            ctx.fillText("DEFI4 - PATROID", canvas.width / 2, 40);
 
             ctx.fillStyle = '#1a1a1a'; ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
             ctx.fillRect(20, 55, canvas.width - 40, 70); ctx.strokeRect(20, 55, canvas.width - 40, 70);
@@ -990,7 +1116,7 @@
             ctx.fillText("CHOIX DE LA DIFFICULTÉ :", 30, 75);
 
             boutonsMenu.forEach(n => {
-                let lbl = n.id === 1 ? "NIV. 1 (2x2)" : n.id === 2 ? "NIV. 2 (3x3)" : "NIV. 3 (5x5)";
+                let lbl = n.id === 0 ? "NIV. 0 (3x1)" : n.id === 1 ? "NIV. 1 (2x2)" : n.id === 2 ? "NIV. 2 (3x3)" : "NIV. 3 (5x5)";
                 ctx.fillStyle = niveauChoisi === n.id ? '#ff3333' : '#333';
                 ctx.fillRect(n.x, n.y, n.w, n.h);
                 ctx.strokeStyle = niveauChoisi === n.id ? '#fff' : '#555';
@@ -1001,7 +1127,7 @@
             });
 
             ctx.textAlign = 'center'; ctx.fillStyle = '#fff'; ctx.font = '11px sans-serif';
-            ctx.fillText("Ramassez tous les objectifs numériques dans l'ordre croissant.", canvas.width / 2, 160);
+            ctx.fillText("Ramassez tous les chiffres dans l'ordre croissant.", canvas.width / 2, 160);
             ctx.fillStyle = '#ff9999';
             ctx.fillText("START pour lancer le jeu, PAUSE pour l'arrêter.", canvas.width / 2, 185);
 
@@ -1088,10 +1214,127 @@
         requestAnimationFrame(gameLoop); 
     }
 
-    niveauChoisi = 1;
-    tailleMonde = 2;
-    genererMonde(2);
+    // ===================== HIGHSCORES =====================
+
+    const HS_KEYS = ['highscore_niv0', 'highscore_niv1', 'highscore_niv2', 'highscore_niv3'];
+    const HS_LABELS = ['NIV. 0 (3×1)', 'NIV. 1 (2×2)', 'NIV. 2 (3×3)', 'NIV. 3 (5×5)'];
+
+    function hsLire(niv) {
+        try { return JSON.parse(localStorage.getItem(HS_KEYS[niv])) || []; }
+        catch(e) { return []; }
+    }
+
+    function hsEcrire(niv, data) {
+        localStorage.setItem(HS_KEYS[niv], JSON.stringify(data));
+    }
+
+    function hsAjouter(niv, nom, scoreVal) {
+        let data = hsLire(niv);
+        data.push({ nom: nom.trim().toUpperCase() || 'AAA', score: scoreVal });
+        data.sort((a, b) => b.score - a.score);
+        data = data.slice(0, 10);
+        hsEcrire(niv, data);
+    }
+
+    // Bouton HIGHSCORE : visible seulement sur le menu TITLE
+    const btnHighscore = document.getElementById('btn-highscore');
+
+    function majVisibiliteHs() {
+        btnHighscore.style.display = gameState === 'TITLE' ? 'inline-block' : 'none';
+    }
+
+    // Overlay saisie nom
+    const saisieOverlay = document.getElementById('saisie-overlay');
+    const saisieInput = document.getElementById('saisie-input');
+    const saisieScoreAffiche = document.getElementById('saisie-score-affiche');
+    const saisieTitre = document.getElementById('saisie-titre');
+    const saisieValider = document.getElementById('saisie-valider');
+
+    let scoreAEnregistrer = 0;
+    let niveauAEnregistrer = 0;
+
+    function afficherSaisieNom(estVictoire) {
+        scoreAEnregistrer = score;
+        niveauAEnregistrer = niveauChoisi;
+        saisieTitre.textContent = estVictoire ? '🎉 MISSION RÉUSSIE !' : '💀 GAME OVER';
+        saisieScoreAffiche.textContent = 'SCORE : ' + score.toString().padStart(6, '0');
+        saisieInput.value = '';
+        saisieOverlay.classList.add('visible');
+        setTimeout(() => saisieInput.focus(), 100);
+    }
+
+    function validerSaisie() {
+        let nom = saisieInput.value.trim().toUpperCase() || 'AAA';
+        hsAjouter(niveauAEnregistrer, nom, scoreAEnregistrer);
+        saisieOverlay.classList.remove('visible');
+        recommencerJeu();
+    }
+
+    saisieValider.addEventListener('click', validerSaisie);
+    saisieValider.addEventListener('touchstart', (e) => { e.preventDefault(); validerSaisie(); }, { passive: false });
+    saisieInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') validerSaisie(); });
+
+    // Overlay highscore
+    const hsOverlay = document.getElementById('hs-overlay');
+    const hsListe = document.getElementById('hs-liste');
+    const hsNiveauLabel = document.getElementById('hs-niveau-label');
+    let hsNiveauActuel = 0;
+
+    function afficherHsNiveau(niv) {
+        hsNiveauActuel = niv;
+        hsNiveauLabel.textContent = HS_LABELS[niv];
+        let data = hsLire(niv);
+        if (data.length === 0) {
+            hsListe.innerHTML = '<div style="color:#555; padding:8px 0;">Aucun score enregistré.</div>';
+            return;
+        }
+        let html = '<table style="width:100%; border-collapse:collapse;">';
+        html += '<tr style="color:#00ffcc; border-bottom:1px solid #333;"><th style="text-align:left;padding:3px 6px;">#</th><th style="text-align:left;padding:3px 6px;">NOM</th><th style="text-align:right;padding:3px 6px;">SCORE</th></tr>';
+        for (let i = 0; i < data.length; i++) {
+            let couleur = i === 0 ? '#ffcc00' : i === 1 ? '#cccccc' : i === 2 ? '#cc8844' : '#ffffff';
+            html += `<tr style="color:${couleur}; border-bottom:1px solid #1a1a1a;">
+                <td style="padding:4px 6px;">${i + 1}</td>
+                <td style="padding:4px 6px;">${data[i].nom}</td>
+                <td style="text-align:right;padding:4px 6px;">${data[i].score.toString().padStart(6, '0')}</td>
+            </tr>`;
+        }
+        html += '赶踤';
+        hsListe.innerHTML = html;
+    }
+
+    btnHighscore.addEventListener('click', () => {
+        afficherHsNiveau(niveauChoisi);
+        hsOverlay.classList.add('visible');
+    });
+    btnHighscore.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        afficherHsNiveau(niveauChoisi);
+        hsOverlay.classList.add('visible');
+    }, { passive: false });
+
+    document.getElementById('hs-prev').addEventListener('click', () => {
+        afficherHsNiveau((hsNiveauActuel + 3) % 4);
+    });
+    document.getElementById('hs-next').addEventListener('click', () => {
+        afficherHsNiveau((hsNiveauActuel + 1) % 4);
+    });
+    document.getElementById('hs-fermer').addEventListener('click', () => {
+        hsOverlay.classList.remove('visible');
+    });
+    document.getElementById('hs-fermer').addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        hsOverlay.classList.remove('visible');
+    }, { passive: false });
+
+    // ===================== FIN HIGHSCORES =====================
+
+    // Initialisation
+    niveauChoisi = 0;
+    tailleMonde = 3;
+    tailleMondeH = 1;
+    genererMonde(3, 1);
     dessinerMinimap();
+    majVisibiliteHs();
     
     gameLoop();
 </script>
