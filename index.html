@@ -156,7 +156,6 @@
     <div id="exit-countdown">3</div>
 </div>
 
-<!-- Overlay saisie du prénom après une partie -->
 <div class="game-overlay" id="saisie-overlay">
     <div id="saisie-titre">PARTIE TERMINÉE</div>
     <div id="saisie-score-affiche">SCORE : 000000</div>
@@ -165,7 +164,6 @@
     <button id="saisie-valider">VALIDER</button>
 </div>
 
-<!-- Overlay highscores -->
 <div class="game-overlay" id="hs-overlay">
     <div id="hs-titre">🏆 HIGHSCORES</div>
     <div id="hs-nav">
@@ -966,61 +964,83 @@
         let pw = player.width;
         let ph = player.height;
 
-        ctx.fillStyle = '#ff6600';
+        // --- ANIMATION DES JAMBES (Marche et Saut) ---
+        let decalLeg1 = 0;
+        let decalLeg2 = 0;
+        let ecart1 = 0;
+        let ecart2 = 0;
+
+        if (!player.auSol) {
+            decalLeg1 = -3;
+            decalLeg2 = -2;
+            ecart1 = -1;
+            ecart2 = 1;
+        } else if (player.vitesseX !== 0) {
+            let cycleMarche = Math.floor(tickAnimation / 6) % 2;
+            if (cycleMarche === 0) {
+                decalLeg1 = -3;
+                decalLeg2 = 0;
+            } else {
+                decalLeg1 = 0;
+                decalLeg2 = -3;
+            }
+        }
+
+        // --- DESSIN DE LA TORTUE DEBOUT ---
+
+        // Jambes (Vert foncé)
+        ctx.fillStyle = '#228B22'; 
+        ctx.fillRect(px + 2 + ecart1, py + 24 + (decalLeg1 < 0 && player.auSol ? 1 : 0), 5, 8 + decalLeg1);
+        ctx.fillRect(px + pw - 7 + ecart2, py + 24 + (decalLeg2 < 0 && player.auSol ? 1 : 0), 5, 8 + decalLeg2);
+        
+        // Pieds / Griffes (Marron-Vert)
+        ctx.fillStyle = '#556B2F'; 
+        ctx.fillRect(px + 1 + ecart1, py + 30 + decalLeg1, 6, 2);
+        ctx.fillRect(px + pw - 8 + ecart2, py + 30 + decalLeg2, 6, 2);
+
+        // Carapace (Dos)
+        ctx.fillStyle = '#8B4513'; 
         if (player.regardX === 1) {
-            ctx.fillRect(px - 2, py + 12, 4, 14);
+            ctx.beginPath(); ctx.arc(px + 4, py + 18, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#DAA520'; // Contour/Bord carapace
+            ctx.fillRect(px - 1, py + 11, 4, 14);
         } else {
-            ctx.fillRect(px + pw - 2, py + 12, 4, 14);
+            ctx.beginPath(); ctx.arc(px + pw - 4, py + 18, 7, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#DAA520'; 
+            ctx.fillRect(px + pw - 3, py + 11, 4, 14);
         }
 
-        ctx.fillStyle = '#0044aa'; 
+        // Corps (Ventre / Plastron clair)
+        ctx.fillStyle = '#F5DEB3'; 
+        ctx.fillRect(px + 3, py + 12, pw - 6, 12);
         
-        // ANIMATION DES JAMBES : Mouvement de balancier (pas à pas)
-        let vitesseAnimation = 0;
-        let cycle = 0;
-        
-        if (player.vitesseX !== 0 && player.auSol) {
-            // En course : animation rapide
-            vitesseAnimation = Math.abs(player.vitesseX) * 0.8;
-            cycle = Math.sin(tickAnimation * vitesseAnimation);
-        } else if (!player.auSol) {
-            // En l'air : petit mouvement pendant le saut
-            cycle = Math.sin(tickAnimation * 0.25);
-        } else {
-            // Immobile : léger mouvement, mais surtout pour ne pas rester figé
-            cycle = Math.sin(tickAnimation * 0.1) * 0.3;
-        }
-        
-        // Décalage horizontal des jambes : entre -3 et +3 pixels
-        let decalageGauche = Math.floor(cycle * 3);
-        let decalageDroite = -Math.floor(cycle * 3);
-        
-        // Jambe gauche
-        ctx.fillRect(px + 2 + decalageGauche, py + 24, 5, 8);
-        // Jambe droite
-        ctx.fillRect(px + pw - 7 + decalageDroite, py + 24, 5, 8);
-        
-        ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(px + 1, py + 30, 6, 2);
-        ctx.fillRect(px + pw - 8, py + 30, 6, 2);
-
-        ctx.fillStyle = '#0088ff';
-        ctx.fillRect(px + 1, py + 10, pw - 2, 14);
-        ctx.fillStyle = '#ff6600'; 
-        ctx.fillRect(px + 1, py + 21, pw - 2, 3);
-
-        ctx.fillStyle = '#ffffff'; 
+        // Tête (Vert)
+        ctx.fillStyle = '#32CD32'; 
         ctx.beginPath();
-        ctx.arc(px + pw / 2, py + 6, 6, 0, Math.PI * 2);
+        ctx.arc(px + pw / 2, py + 9, 6, 0, Math.PI * 2);
         ctx.fill();
-        
-        ctx.fillStyle = '#00ffcc';
+
+        // Casquette rouge
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + 7, 6, Math.PI, 0); // Demi-cercle haut
+        ctx.fill();
+        // Visière de la casquette
         if (player.regardX === 1) {
-            ctx.fillRect(px + pw / 2 - 1, py + 3, 5, 5);
+            ctx.fillRect(px + pw / 2, py + 6, 9, 2);
         } else {
-            ctx.fillRect(px + pw / 2 - 4, py + 3, 5, 5);
+            ctx.fillRect(px + pw / 2 - 9, py + 6, 9, 2);
         }
 
+        // Œil (Noir)
+        ctx.fillStyle = '#000000';
+        if (player.regardX === 1) {
+            ctx.fillRect(px + pw / 2 + 2, py + 7, 2, 2);
+        } else {
+            ctx.fillRect(px + pw / 2 - 4, py + 7, 2, 2);
+        }
+
+        // Arme / Canon
         ctx.fillStyle = '#777777'; 
         let canonX = px + pw / 2;
         let canonY = py + 14;
@@ -1029,7 +1049,7 @@
 
         if (commandes.haut) {
             ctx.fillRect(px + (player.regardX === 1 ? pw / 2 : pw / 2 - 3), py - 4, 3, 10); 
-            ctx.fillStyle = '#ff6600'; 
+            ctx.fillStyle = '#444444'; 
             ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 4), py + 6, 3, 8);
             
             flashX = px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 2);
@@ -1037,31 +1057,32 @@
         } 
         else if (commandes.bas && !player.auSol) {
             ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 2 : pw / 2 - 5), py + 26, 3, 10); 
-            ctx.fillStyle = '#ff6600'; 
+            ctx.fillStyle = '#444444'; 
             ctx.fillRect(px + (player.regardX === 1 ? pw / 2 + 1 : pw / 2 - 4), py + 16, 3, 10);
             
             flashX = px + (player.regardX === 1 ? pw / 2 + 3 : pw / 2 - 4);
             flashY = py + 38;
         } 
         else {
-            ctx.fillStyle = '#ff6600'; 
+            ctx.fillStyle = '#555555'; 
             if (player.regardX === 1) {
-                ctx.fillRect(px + pw - 4, py + 12, 8, 4);  
+                ctx.fillRect(px + pw - 4, py + 14, 8, 4);  
                 ctx.fillStyle = '#777777';
-                ctx.fillRect(px + pw + 2, py + 10, 6, 3);   
-                ctx.fillRect(px + pw + 1, py + 12, 2, 4);   
+                ctx.fillRect(px + pw + 2, py + 12, 6, 3);   
+                ctx.fillRect(px + pw + 1, py + 14, 2, 4);   
                 flashX = px + pw + 10;
-                flashY = py + 11;
+                flashY = py + 13;
             } else {
-                ctx.fillRect(px - 4, py + 12, 8, 4);   
+                ctx.fillRect(px - 4, py + 14, 8, 4);   
                 ctx.fillStyle = '#777777';
-                ctx.fillRect(px - 8, py + 10, 6, 3);    
-                ctx.fillRect(px - 3, py + 12, 2, 4);    
+                ctx.fillRect(px - 8, py + 12, 6, 3);    
+                ctx.fillRect(px - 3, py + 14, 2, 4);    
                 flashX = px - 11;
-                flashY = py + 11;
+                flashY = py + 13;
             }
         }
 
+        // Éclair de tir
         if (player.timerFlashTir > 0) {
             ctx.fillStyle = '#ffff00';
             ctx.beginPath();
@@ -1298,7 +1319,7 @@
                 <td style="text-align:right;padding:4px 6px;">${data[i].score.toString().padStart(6, '0')}</td>
             </tr>`;
         }
-        html += '赶踤';
+        html += '</table>';
         hsListe.innerHTML = html;
     }
 
